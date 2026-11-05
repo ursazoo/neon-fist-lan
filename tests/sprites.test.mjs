@@ -5,10 +5,11 @@ import { test } from 'node:test';
 import { loadSprites, sampleSprite } from '../shared/sprites.js';
 
 const read = name => readFileSync(new URL('../' + name, import.meta.url));
-const meta = JSON.parse(read('assets/fighters/keyzip.json'));
+const registry = JSON.parse(read('assets/fighters/ai.json'));
+const meta = registry.deepseek;
 const config = JSON.parse(read('data/fighter.neon.json'));
 const moves = config.moves;
-const png = read('assets/fighters/keyzip.png');
+const png = read('assets/fighters/deepseek.png');
 const width = png.readUInt32BE(16), height = png.readUInt32BE(20);
 const freeze = value => {
   for (const child of Object.values(value)) if (child && typeof child === 'object') freeze(child);
@@ -55,8 +56,8 @@ test('move timing comes from live definitions and spin active repeats every thre
   assert.equal(sample({ state:'special',move:moves.fireball,moveFrame:11 }).frameName, 'fire1');
 });
 
-test('walk, back and idle use every source frame and loop on simulation ticks', () => {
-  for (const [state, count, duration] of [['idle',4,8],['walk',6,6],['back',6,6]]) {
+test('walk, back and idle use configured frames and loop on simulation ticks', () => {
+  for (const [state, count, duration] of [['idle',4,8],['walk',meta.clips?.walk.frames.length||6,6],['back',meta.clips?.back.frames.length||6,6]]) {
     for (let i = 0; i < count; i++) {
       assert.equal(sample({ state,stateFrame:i*duration }).frameName, state + i);
       assert.equal(sample({ state,stateFrame:(i+1)*duration-1 }).frameName, state + i);
@@ -123,7 +124,7 @@ test('actual repeated hits restart immediately over residual moves; block and KO
   assert.equal(sampleSprite(victim, meta).frameName, 'idle0');
 });
 
-function mockLoader(t, metadata = meta, decoding = Promise.resolve()) {
+function mockLoader(t, metadata = registry, decoding = Promise.resolve()) {
   const urls = [];
   t.mock.method(globalThis, 'fetch', async url => {
     urls.push(url.href);
@@ -131,8 +132,8 @@ function mockLoader(t, metadata = meta, decoding = Promise.resolve()) {
   });
   const originalImage = Object.getOwnPropertyDescriptor(globalThis,'Image');
   globalThis.Image = class {
-    naturalWidth = width;
-    naturalHeight = height;
+    get naturalWidth() {return read('assets/fighters/'+this.src.split('/').at(-1)).readUInt32BE(16);}
+    get naturalHeight() {return read('assets/fighters/'+this.src.split('/').at(-1)).readUInt32BE(20);}
     decode() { urls.push(this.src); return decoding; }
   };
   t.after(() => {
@@ -145,14 +146,15 @@ function mockLoader(t, metadata = meta, decoding = Promise.resolve()) {
 test('load waits for decode and resolves assets below a GitHub Pages project path', async t => {
   let finish;
   const decoding = new Promise(resolve => { finish = resolve; });
-  const urls = mockLoader(t,meta,decoding);
+  const urls = mockLoader(t,registry,decoding);
   let ready = false;
   const loading = loadSprites('https://example.test/neon-fist/').then(value => { ready = true; return value; });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(ready,false);
   finish();
   const sprites = await loading;
-  assert.deepEqual(urls,['https://example.test/neon-fist/assets/fighters/keyzip.json','https://example.test/neon-fist/assets/fighters/keyzip.png']);
+  assert.deepEqual(urls,['https://example.test/neon-fist/assets/fighters/ai.json',...['deepseek','claude','chatgpt'].map(id=>'https://example.test/neon-fist/assets/fighters/'+id+'.png')]);
+  for(const id of ['deepseek','claude','chatgpt'])assert.equal(sprites.characters[id].meta.image,registry[id].image);
   assert.equal(sprites.image.naturalWidth,width);
   for (const [name, { rect:[x,y,w,h],origin }] of Object.entries(sprites.meta.frames)) {
     assert(x >= 0 && y >= 0 && w > 0 && h > 0 && x+w <= width && y+h <= height,name);
@@ -164,14 +166,14 @@ test('bad image, HTTP error, missing frame and out-of-bounds metadata reject loa
   const urls = mockLoader(t);
   t.mock.method(globalThis,'fetch',async()=>({ ok:false }));
   await assert.rejects(loadSprites('https://example.test/'),/Unable to load/);
-  const bad = structuredClone(meta);
-  bad.frames.idle0.rect[0] = width;
+  const bad = structuredClone(registry);
+  bad.deepseek.frames.idle0.rect[0] = width;
   t.mock.method(globalThis,'fetch',async()=>({ ok:true,json:async()=>bad }));
   await assert.rejects(loadSprites('https://example.test/'),/Invalid fighter sprite frame idle0/);
-  const missing = structuredClone(meta); delete missing.frames.punch3;
+  const missing = structuredClone(registry); delete missing.claude.frames.punch3;
   t.mock.method(globalThis,'fetch',async()=>({ ok:true,json:async()=>missing }));
   await assert.rejects(loadSprites('https://example.test/'),/Missing fighter sprite frame punch3/);
-  t.mock.method(globalThis,'fetch',async()=>({ ok:true,json:async()=>structuredClone(meta) }));
+  t.mock.method(globalThis,'fetch',async()=>({ ok:true,json:async()=>structuredClone(registry) }));
   globalThis.Image.prototype.decode = async()=>{ throw new Error('bad PNG'); };
   await assert.rejects(loadSprites('https://example.test/'),/Unable to decode/);
   assert(urls.length > 0);
@@ -204,11 +206,14 @@ test('repeated sampling and draws freeze unchanged fields, preserve fighters, an
   assert.equal(ctx.imageSmoothingEnabled,true);
   const [x,y,w,h] = frame.rect, [ox,oy] = frame.origin, scale = frame.scale;
   assert.deepEqual(calls[0].args,[sprites.image,x,y,w,h,-ox*scale,-oy*scale,w*scale,h*scale]);
-  assert.equal(calls[0].smoothing,false);
-  assert.match(calls[0].filter,/hue-rotate\(135deg\).*brightness\(2.4\)/);
+  assert.equal(calls[0].smoothing,true);
+  assert.equal(calls[0].filter,'brightness(2.4) saturate(0.4)');
   ctx.filter = 'brightness(1.6) hue-rotate(70deg)';
   sprites.draw(ctx,freeze(fighter({ side:'p2',state:'hitstun',stateFrame:0,move:moves.kick,moveFrame:10 })));
-  assert.match(calls.at(-1).filter,/hue-rotate\(280deg\).*brightness\(1.6\) hue-rotate\(70deg\)/);
+  assert.equal(calls.at(-1).filter,'brightness(1.6) hue-rotate(70deg)');
+  sprites.draw(ctx,actual,'chatgpt');
+  assert.equal(calls.at(-1).args[0],sprites.characters.chatgpt.image);
+  assert.throws(()=>sprites.frame(actual,'unknown'),/Unknown fighter/);
   const frozen = freeze(fighter({ state:'attack',move:moves.kick,moveFrame:3,stateFrame:3 }));
   const held = sprites.frame(frozen);
   for (const remaining of [3,2,1,0]) {

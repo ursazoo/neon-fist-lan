@@ -1,3 +1,5 @@
+import { CHARACTERS, isCharacter } from './characters.js';
+
 const CLIPS = {
   idle: { frames:['idle0','idle1','idle2','idle3'], duration:8, loop:true },
   walk: { frames:['walk0','walk1','walk2','walk3','walk4','walk5'], duration:6, loop:true },
@@ -5,7 +7,7 @@ const CLIPS = {
   hit: { frames:['hit1','hit2','hit3'], duration:3, loop:false },
   block: { frames:['block0','block1'], duration:3, loop:false },
   ko: { frames:['ko0','ko1','ko2'], duration:7, loop:false },
-  win: { frames:['idle0','idle1','idle2','idle3'], duration:8, loop:true },
+  win: { frames:['victory0'], duration:8, loop:false },
 };
 
 const MOVES = {
@@ -32,8 +34,9 @@ export function sampleSprite(fighter, meta) {
   let clip = 'idle', phase = 'hold', frameName = 'idle0';
   const play = name => {
     clip = name;
-    phase = CLIPS[name].loop ? 'loop' : 'once';
-    frameName = clipFrame(CLIPS[name], age);
+    const sequence = meta.clips?.[name] || CLIPS[name];
+    phase = sequence.loop ? 'loop' : 'once';
+    frameName = clipFrame(sequence, age);
   };
   if (f.state === 'ko') {
     play('ko');
@@ -100,30 +103,36 @@ function validate(meta, image) {
 }
 
 export async function loadSprites(baseURL = new URL('../', import.meta.url)) {
-  const url = new URL('assets/fighters/keyzip.json', baseURL);
+  const url = new URL('assets/fighters/ai.json', baseURL);
   const response = await fetch(url, { cache:'no-store' });
   if (!response.ok) throw new Error('Unable to load fighter sprites ' + url.pathname);
-  const meta = await response.json();
-  if (typeof meta?.image !== 'string') throw new Error('Missing fighter sprite image');
-  const imageURL = new URL(meta.image, baseURL);
-  const image = new Image();
-  image.src = imageURL.href;
-  try { await image.decode(); }
-  catch (cause) { throw new Error('Unable to decode fighter sprites ' + imageURL.pathname, { cause }); }
-  validate(meta, image);
-  freeze(meta);
-  const frame = fighter => sampleSprite(fighter, meta);
-  return Object.freeze({ meta, image, frame,
-    draw(ctx, fighter) {
-      const sampled = frame(fighter);
+  const registry = await response.json();
+  const loaded = await Promise.all(CHARACTERS.map(async ({id,image:expectedImage}) => {
+    const meta = registry[id];
+    if (!meta || meta.image !== expectedImage) throw new Error('Missing fighter sprite image ' + id);
+    const imageURL = new URL(meta.image, baseURL);
+    const image = new Image();
+    image.src = imageURL.href;
+    try { await image.decode(); }
+    catch (cause) { throw new Error('Unable to decode fighter sprites ' + imageURL.pathname, { cause }); }
+    validate(meta, image);
+    freeze(meta);
+    return [id,Object.freeze({meta,image})];
+  }));
+  const characters = Object.freeze(Object.fromEntries(loaded));
+  const frame = (fighter, character='deepseek') => {
+    if (!isCharacter(character)) throw new RangeError('Unknown fighter character ' + character);
+    return sampleSprite(fighter, characters[character].meta);
+  };
+  return Object.freeze({ meta:characters.deepseek.meta,image:characters.deepseek.image,characters,frame,
+    draw(ctx, fighter, character='deepseek') {
+      const sampled = frame(fighter, character);
       const [x,y,w,h] = sampled.rect, [ox,oy] = sampled.origin, scale = sampled.scale;
       ctx.save();
       try {
-        ctx.imageSmoothingEnabled = false;
-        const tint = fighter.side === 'p2' ? 280 : 135;
-        ctx.filter = 'hue-rotate(' + tint + 'deg) saturate(1.35)' +
-          (ctx.filter && ctx.filter !== 'none' ? ' ' + ctx.filter : '');
-        ctx.drawImage(image, x,y,w,h, -ox*scale,-oy*scale,w*scale,h*scale);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(characters[character].image, x,y,w,h, -ox*scale,-oy*scale,w*scale,h*scale);
       } finally { ctx.restore(); }
       return sampled;
     },

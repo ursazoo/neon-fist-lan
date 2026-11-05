@@ -1,6 +1,7 @@
 import { Lockstep } from './lockstep.js';
+import { isCharacter } from './characters.js';
 
-const VERSION = 1;
+const VERSION = 2;
 const CODE_LIMIT = 65536;
 const MESSAGE_LIMIT = 4096;
 const TIMEOUT = 15000;
@@ -15,6 +16,7 @@ export function createSession(engine, onStatus) {
   let pc = null, dc = null, queue = null, timer = null, connectTimer = null;
   let config = '', build = '', stage = '', hello = false, busy = false;
   let votes = [false, false], remoteEnd = null;
+  let localCharacter = null, remoteCharacter = null, roster = null;
   let acc = 0, last = null, progress = 0, received = 0, opened = 0;
   let history = [], hashes = new Map(), pendingHashes = new Map();
   const player = () => role === 'host' ? 0 : 1;
@@ -73,13 +75,14 @@ export function createSession(engine, onStatus) {
     if (pendingHashes.has(frame)) compare(frame, pendingHashes.get(frame));
     return hash;
   }
-  function resetMatch(nextEpoch, seed) {
+  function resetMatch(nextEpoch, seed, characters) {
+    roster = Object.freeze([...characters]);
     epoch = nextEpoch;
     queue = new Lockstep(player());
     votes = [false, false]; remoteEnd = null;
     history = []; hashes = new Map(); pendingHashes = new Map();
     resetClock();
-    engine.reset(seed);
+    engine.reset(seed, [...roster]);
     opened = progress = clock();
     stage = 'prepared';
     status('handshake', '正在同步开局');
@@ -87,8 +90,8 @@ export function createSession(engine, onStatus) {
   }
   function prepare() {
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1;
-    const hash = resetMatch(epoch + 1, seed);
-    send('start', { seed, hash });
+    const hash = resetMatch(epoch + 1, seed, roster || [localCharacter, remoteCharacter]);
+    send('start', { seed, hash, roster });
   }
   function play() {
     stage = 'running';
@@ -114,9 +117,11 @@ export function createSession(engine, onStatus) {
     if (m.epoch < epoch) return;
     if (m.type === 'hello') {
       if (hello || state !== 'handshake' || m.epoch !== 0 || m.role === role ||
-          !['host', 'guest'].includes(m.role) || m.build !== build || m.config !== config) {
+          !['host', 'guest'].includes(m.role) || m.build !== build || m.config !== config ||
+          !isCharacter(m.character)) {
         throw new Error('游戏版本或配置不一致');
       }
+      remoteCharacter = m.character;
       hello = true;
       if (role === 'host') prepare();
       return;
@@ -125,10 +130,12 @@ export function createSession(engine, onStatus) {
       if (m.epoch <= epoch) return;
       if (!hello || role !== 'guest' || m.epoch !== epoch + 1 ||
           !(state === 'handshake' && epoch === 0 || state === 'ended' && votes.every(Boolean)) ||
-          !Number.isInteger(m.seed) || m.seed < 1 || m.seed > 0xffffffff || !validHash(m.hash)) {
+          !Number.isInteger(m.seed) || m.seed < 1 || m.seed > 0xffffffff || !validHash(m.hash) ||
+          !Array.isArray(m.roster) || m.roster.length !== 2 || !m.roster.every(isCharacter) ||
+          m.roster[0] !== remoteCharacter || m.roster[1] !== localCharacter) {
         throw new Error('开局消息无效');
       }
-      const hash = resetMatch(m.epoch, m.seed);
+      const hash = resetMatch(m.epoch, m.seed, m.roster);
       if (hash !== m.hash) throw new Error('开局状态校验失败');
       send('ready', { hash });
       return;
@@ -179,7 +186,7 @@ export function createSession(engine, onStatus) {
         clearTimeout(connectTimer); connectTimer = null;
         opened = progress = received = clock();
         status('handshake', '正在核对游戏版本');
-        send('hello', { ...identity(), role });
+        send('hello', { ...identity(), role, character: localCharacter });
         timer = setInterval(() => {
           if (token !== generation) return;
           const now = clock();
@@ -203,6 +210,8 @@ export function createSession(engine, onStatus) {
     dispose();
     role = nextRole; id = ''; epoch = 0; hello = false; stage = '';
     queue = null; history = []; hashes.clear(); pendingHashes.clear();
+    localCharacter = engine.selection(); remoteCharacter = null; roster = null;
+    if (!isCharacter(localCharacter)) throw new Error('角色选择无效');
     config = engine.config(); build = engine.build();
     if (!config || !build) throw new Error('游戏资源尚未加载');
     status('signaling', role === 'host' ? '正在生成主机连接码' : '粘贴主机连接码，再点击接受');
@@ -354,6 +363,7 @@ export function createSession(engine, onStatus) {
     get state() { return state; },
     get role() { return role; },
     get epoch() { return epoch; },
+    get roster() { return roster ? [...roster] : null; },
     get frame() { return engine.frame(); },
     get waiting() { return state === 'waiting'; },
     get config() { return config; },

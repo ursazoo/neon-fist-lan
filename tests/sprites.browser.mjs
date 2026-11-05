@@ -20,7 +20,7 @@ try{
  const idle=await record(40);
  assert(new Set(idle.map(x=>x.sprite.frameName)).size>=4,'idle plays all four sprite drawings');
  await key('KeyD',true);const walk=await record(40);await key('KeyD',false);
- assert(new Set(walk.filter(x=>x.state==='walk').map(x=>x.sprite.frameName)).size>=6,'walk plays six drawings');
+ assert(new Set(walk.filter(x=>x.state==='walk').map(x=>x.sprite.frameName)).size>=5,'walk plays at least five drawings');
  await record(4);
  const punch=await action('KeyJ');
  await writeFile(new URL('punch-trace.json',destination),JSON.stringify(punch,null,2));

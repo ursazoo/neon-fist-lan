@@ -2,7 +2,7 @@
 
 两台电脑打开同一网页，各自用键盘进行 1v1 对战。网页可部署到 GitHub Pages。连接时手动交换主机码和应答码，不需要账号、房间服务器或数据库。
 
-基于 [Neon Fist](https://github.com/developerrutu/neon-fist) 修改，保留上游的战斗、程序生成角色、场景和声音。来源版本与许可证见 [UPSTREAM.md](UPSTREAM.md) 和 [LICENSE](LICENSE)。
+基于 [Neon Fist](https://github.com/developerrutu/neon-fist) 修改，保留上游的战斗、场景和声音。角色换为 DeepSeek、Claude、ChatGPT 的二创少女形象。来源版本与许可证见 [UPSTREAM.md](UPSTREAM.md) 和 [LICENSE](LICENSE)。
 
 ## 在本机打开
 
@@ -26,6 +26,8 @@ npm run dev
 ## 两台电脑连接
 
 两台电脑连接同一 Wi-Fi，并各自打开相同的部署网址。建议先使用最新版桌面 Chrome 或 Edge，保持游戏窗口可见。
+
+双方先选择自己的角色，再创建或加入连接。角色在生成连接码时锁定，并同步给对端，重赛保留。不同角色共享招式与数值。本地练习可另外选择 CPU 对手。新版连接码使用协议 v2，旧连接码需要双方刷新后重新生成。
 
 1. 双方点击 **联机对战**。
 2. 电脑 A 创建主机，等待生成连接码，将主机码完整发送给电脑 B。
@@ -57,7 +59,7 @@ npm run dev
 
 ## 运行验证
 
-角色采用逐帧精灵，来源及独立素材许可证见 [素材署名](assets/fighters/CREDITS.md)。两位玩家共用动作素材，通过配色和镜像区分。动画时间跟随战斗模拟帧，等待远端输入、暂停和命中停顿时停止播放。
+三位角色各自采用独立逐帧动作图，来源及生成说明见 [素材署名](assets/fighters/CREDITS.md) 和 [提示词](ART_PROMPTS.md)。动画时间跟随战斗模拟帧，等待远端输入、暂停和命中停顿时停止播放。
 
 ```sh
 npm run check

@@ -70,6 +70,8 @@ try {
   const b = await newPage();
   passed('both pages boot below GitHub project subpath');
 
+  await a.eval(`document.querySelector('#boot [data-picker="local"] [data-character="claude"]').click()`);
+  await b.eval(`document.querySelector('#boot [data-picker="local"] [data-character="chatgpt"]').click()`);
   await openNet(b); await click(b, 'nJoin');
   await b.eval('document.getElementById("netin").value="invalid connection code"');
   await click(b, 'nAccept');
@@ -78,6 +80,13 @@ try {
   passed('invalid code rejected without starting a match', invalid);
   await click(b, 'nClose');
   await exchange(a, b);
+  for (const p of [a,b]) {
+    assert.deepEqual(await p.eval('NEON.Game.roster'),['claude','chatgpt']);
+    assert.equal(await p.eval("NEON.sprites.frame('p1').character"),'claude');
+    assert.equal(await p.eval("NEON.sprites.frame('p2').character"),'chatgpt');
+    assert(await p.eval("[...document.querySelectorAll('.character-card')].every(b=>b.disabled)"));
+  }
+  passed('different character selections render the same roster on both peers');
   assert.equal(await a.eval('NEON.Net.role'), 'host');
   assert.equal(await b.eval('NEON.Net.role'), 'guest');
   for (const p of [a, b]) {

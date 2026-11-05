@@ -154,17 +154,21 @@ test('session handshake, manual exchange timeout, rematch timer and disconnect u
     close() {}
   }
   globalThis.RTCPeerConnection = Peer;
-  const makeEngine = () => {
-    let frame = 0, seed = 0, sums = [0, 0];
+  const makeEngine = choice => {
+    let frame = 0, seed = 0, sums = [0, 0], roster = null;
+    let selected = choice;
     return {
-      reset(value) { frame = 0; seed = value; sums = [0, 0]; },
+      selection: () => selected,
+      choose(value) { selected = value; },
+      get roster() { return roster; },
+      reset(value, characters) { frame = 0; seed = value; sums = [0, 0]; roster = characters; },
       step(a, b) { frame++; sums[0] += a; sums[1] += b; },
-      frame: () => frame, hash: () => configFingerprint({ frame, seed, sums }),
+      frame: () => frame, hash: () => configFingerprint({ frame, seed, sums, roster }),
       config: () => '12345678', build: () => 'abcdef01',
       rate: () => 1, ended: () => frame === 120
     };
   };
-  const engines = [makeEngine(), makeEngine()], statuses = [[], []];
+  const engines = [makeEngine('deepseek'), makeEngine('claude')], statuses = [[], []];
   let rematchTimerChecked = false;
   const sessions = engines.map((engine, i) => createSession(engine, status => {
     statuses[i].push(status);
@@ -193,6 +197,8 @@ test('session handshake, manual exchange timeout, rematch timer and disconnect u
     await sessions[0].accept(answer); await flush();
     assert.deepEqual(sessions.map(s => s.state), ['playing', 'playing'], JSON.stringify(statuses));
     assert.deepEqual(sessions.map(s => s.epoch), [1, 1]);
+    assert.deepEqual(engines.map(engine => engine.roster), [['deepseek','claude'],['deepseek','claude']]);
+    engines[0].choose('chatgpt'); engines[1].choose('chatgpt');
     for (let i = 0; i < 20; i++) await tick();
     const guestFrame = engines[1].frame();
     for (let i = 0; i < 25; i++) await tick(false);
@@ -209,7 +215,7 @@ test('session handshake, manual exchange timeout, rematch timer and disconnect u
     assert.notEqual(sessions[0].checkpoints[0].hash, 'tamper');
     wall += 20000;
     const matchId = JSON.parse(atob(offer)).id;
-    for (const peer of peers) peer.channel.send(JSON.stringify({v:1,id:matchId,epoch:1,type:'ping'}));
+    for (const peer of peers) peer.channel.send(JSON.stringify({v:2,id:matchId,epoch:1,type:'ping'}));
     await flush();
     sessions[0].rematch(); await flush();
     assert.equal(sessions[0].epoch, 1);
@@ -217,10 +223,11 @@ test('session handshake, manual exchange timeout, rematch timer and disconnect u
     assert(rematchTimerChecked, 'heartbeat ran during rematch handshake');
     assert.deepEqual(sessions.map(s => s.epoch), [2, 2]);
     assert.deepEqual(sessions.map(s => s.frame), [0, 0]);
+    assert.deepEqual(sessions.map(s => s.roster), [['deepseek','claude'],['deepseek','claude']], 'rematch keeps the frozen choices');
     assert.equal(engines[0].hash(), engines[1].hash());
     const previous = JSON.parse(atob(offer));
-    peers[1].channel.send(JSON.stringify({v:1,id:previous.id,epoch:1,type:'input',frame:2,mask:127}));
-    peers[1].channel.send(JSON.stringify({v:1,id:previous.id,epoch:1,type:'leave'}));
+    peers[1].channel.send(JSON.stringify({v:2,id:previous.id,epoch:1,type:'input',frame:2,mask:127}));
+    peers[1].channel.send(JSON.stringify({v:2,id:previous.id,epoch:1,type:'leave'}));
     await flush();
     assert.deepEqual(sessions.map(s => s.state), ['playing', 'playing']);
     for (let i = 0; i < 10; i++) await tick();
@@ -233,9 +240,10 @@ test('session handshake, manual exchange timeout, rematch timer and disconnect u
     const newAnswer=await sessions[1].accept(newOffer);
     await sessions[0].accept(newAnswer); await flush();
     assert.deepEqual(sessions.map(s => s.state), ['playing', 'playing']);
+    assert.deepEqual(engines.map(engine => engine.roster), [['chatgpt','chatgpt'],['chatgpt','chatgpt']], 'new connection takes the new choices');
     const mismatchId=JSON.parse(atob(newOffer)).id;
     const badHash=engines[0].hash()==='ffffffff'?'00000000':'ffffffff';
-    peers.at(-1).channel.send(JSON.stringify({v:1,id:mismatchId,epoch:1,type:'hash',frame:0,hash:badHash}));
+    peers.at(-1).channel.send(JSON.stringify({v:2,id:mismatchId,epoch:1,type:'hash',frame:0,hash:badHash}));
     await flush();
     assert.equal(sessions[0].state,'error');
     assert.equal(sessions[1].state,'disconnected');

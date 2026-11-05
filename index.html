@@ -89,7 +89,7 @@
   #boot.ready{opacity:1;pointer-events:auto;}
   #boot,#netui{position:absolute;inset:0;display:flex;flex-direction:column;gap:2vh;
     align-items:center;justify-content:center;background:rgba(5,4,10,.94);pointer-events:auto;z-index:5;padding:4vh 5vw;}
-  #netui{display:none;background:rgba(5,4,10,.97);}
+  #netui{display:none;background:rgba(5,4,10,.97);z-index:6;}
   #boot h1{margin:0;font-size:clamp(30px,9vh,90px);letter-spacing:.14em;
     background:linear-gradient(180deg,#fff,#8b7bff);-webkit-background-clip:text;background-clip:text;color:transparent;}
   #boot p,#netui p{margin:0;opacity:.72;font-size:clamp(10px,1.8vh,15px);letter-spacing:.1em;text-align:center;line-height:1.9;}
@@ -103,7 +103,24 @@
   button:disabled{opacity:.4;cursor:default;}
   textarea{user-select:text;-webkit-user-select:text;}
   #netstatus{position:absolute;left:50%;bottom:2vh;transform:translateX(-50%);max-width:90vw;text-align:center;color:#9fe;font-size:12px;pointer-events:none;z-index:2;}
-  #netui{overflow:auto;}
+  #boot,#netui{overflow:auto;overscroll-behavior:contain;touch-action:pan-y;}
+  .character-group{margin:0;padding:0;border:0;min-width:0;width:min(580px,90vw);}
+  .character-group legend{padding:0 0 8px;font-size:12px;color:#cfc4ee;}
+  .character-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .character-card{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;
+    border:1px solid #40344e;border-radius:10px;background:#15101e;color:#ded9e8;
+    padding:8px 4px;font:inherit;font-size:12px;cursor:pointer;}
+  .character-card[aria-pressed="true"]{border-color:var(--character);background:#252033;
+    box-shadow:inset 0 0 0 1px var(--character);color:#fff;}
+  .character-card:focus-visible{outline:2px solid #fff;outline-offset:3px;}
+  .character-preview{--preview-height:120px;display:block;width:96px;height:112px;background-repeat:no-repeat;
+    background-size:600% 800%;background-position:left top;}
+  #netui .character-preview{--preview-height:60px;}
+  @media(max-height:650px){
+    #boot,#netui{justify-content:flex-start;gap:12px;padding:18px 5vw;}
+    #boot h1{font-size:30px;} .character-preview{--preview-height:64px;}
+    #boot p,#netui p{font-size:10px;line-height:1.5;}
+  }
   #netstat{font-size:clamp(9px,1.6vh,13px);color:#9fe;min-height:1.4em;}
 </style>
 </head>
@@ -157,6 +174,7 @@
     <p id="netexp">① 主机创建连接，复制连接码给客机。<br>
       ② 客机选择加入，粘贴并接受主机码，复制回传码。<br>
       ③ 主机粘贴并接受回传码，自动开局。</p>
+    <fieldset class="character-group"><legend>本机角色</legend><div class="character-picker" data-picker="local"></div></fieldset>
     <div class="row">
       <button class="btn sm" id="nHost">创建连接 · P1</button>
       <button class="btn sm" id="nJoin">加入连接 · P2</button>
@@ -178,12 +196,14 @@
   </div>
   <div id="boot">
     <h1>NEON FIST</h1>
+    <fieldset class="character-group"><legend>本机角色</legend><div class="character-picker" data-picker="local"></div></fieldset>
+    <fieldset class="character-group"><legend>CPU 对手</legend><div class="character-picker" data-picker="opponent"></div></fieldset>
     <p>MOVE A/D · JUMP W · CROUCH S · PUNCH J · KICK K · BLOCK L<br>
        <b>FIREBALL</b> ↓ ↘ → + P &nbsp;·&nbsp; <b>UPPERCUT</b> → ↓ ↘ + P &nbsp;·&nbsp; <b>SPIN KICK</b> ↓ ↙ ← + K<br>
        联机双方均使用 WASD + JKL。主机控制 P1，客机控制 P2。</p>
     <div class="row"><button class="btn" id="start">本地练习</button>
     <button class="btn" id="openNet">同 Wi-Fi 联机</button></div>
-    <p><a href="assets/fighters/CREDITS.md" style="color:inherit">Sprites by KeyZip · CC BY 3.0</a></p>
+    <p><a href="assets/fighters/CREDITS.md" style="color:inherit">角色与素材来源</a></p>
   </div>
 </div>
 <script type="module">
@@ -193,6 +213,9 @@ import { auditFighterConfig, configFingerprint, hashGameState }
   from './shared/integrity.js';
 import { createSession } from './shared/netplay.js';
 import { loadSprites } from './shared/sprites.js';
+import { CHARACTERS } from './shared/characters.js';
+const characterById = Object.fromEntries(CHARACTERS.map(character=>[character.id,character]));
+const selection = { local:'deepseek', opponent:'claude' };
 let Sprites = null;
 let CONFIG_FINGERPRINT = null;
 let BUILD_FINGERPRINT = null;
@@ -1267,7 +1290,7 @@ const Game = {
   round:1, maxRounds:3, winsNeeded:2,
   timer:99, timerSub:0,
   hitstop:0, slowmo:0, paused:false,
-  cpu:true, frame:0, winner:null
+  cpu:true, frame:0, winner:null, roster:['deepseek','claude']
 };
 
 const P1 = new Fighter(0, 330, PAL.p1, 'PLAYER 1');
@@ -1317,9 +1340,9 @@ const UI = {
     if(this._c1!==c1){ this._c1=c1; this.c1.textContent=c1; this.c1.style.opacity=c1?1:0; }
     if(this._c2!==c2){ this._c2=c2; this.c2.textContent=c2; this.c2.style.opacity=c2?1:0; }
     const online=Net.state!=='idle';
-    const n1=online?(Net.role==='host'?'P1 · 本机':'P1 · 对方'):'PLAYER 1';
+    const n1=characterById[Game.roster[0]].name+' · '+(online?(Net.role==='host'?'P1 · 本机':'P1 · 对方'):'PLAYER 1');
     if(this._n1!==n1){ this._n1=n1; this.n1.textContent=n1; }
-    const n2=online?(Net.role==='guest'?'P2 · 本机':'P2 · 对方'):(Game.cpu?'CPU':'PLAYER 2');
+    const n2=characterById[Game.roster[1]].name+' · '+(online?(Net.role==='guest'?'P2 · 本机':'P2 · 对方'):(Game.cpu?'CPU':'PLAYER 2'));
     if(this._n2!==n2){ this._n2=n2; this.n2.textContent=n2; }
   }
 };
@@ -1333,7 +1356,9 @@ function startRound(){
   UI.show('ROUND '+Game.round, Game.round===3?'FINAL ROUND':'');
   Audio5.play('bell',0.7);
 }
-function startMatch(seed=0x1234abc){
+function startMatch(seed=0x1234abc,roster=Game.roster){
+  Game.roster=[...roster];
+  FIGHTERS.forEach((fighter,index)=>{fighter.name=characterById[Game.roster[index]].name;});
   clearTimeout(UI._t); UI.hide();
   clearKeys(); acc=0; last=performance.now();
   Game.paused=false; Game.winner=null;
@@ -1496,7 +1521,8 @@ function updatePresentation(){
   Cam.update(P1,P2);
 }
 const Net=createSession({
-  reset(seed){ Game.cpu=false; startMatch(seed); },
+  selection:()=>selection.local,
+  reset(seed,roster){ Game.cpu=false; startMatch(seed,roster); },
   step(a,b){
     const t0=performance.now(); simulate(a,b); updatePresentation();
     DEBUG.stepMs=performance.now()-t0;
@@ -1517,7 +1543,7 @@ const Net=createSession({
     clearKeys(); document.getElementById('netui').style.display='flex';
   }
   if(state==='signaling') clearKeys();
-  syncToggles();
+  syncCharacterPickers(); syncToggles();
 });
 
 /* ============================ RENDERING ============================ */
@@ -1572,7 +1598,7 @@ function drawFighter(g,f){
   g.scale(f.face,1);
   if(f.flash>0) g.filter='brightness(2.4) saturate(0.4)';
   else if(f.invuln>0 && (Game.frame>>1)%2===0) g.filter='brightness(1.6) hue-rotate(70deg)';
-  Sprites.draw(g,f);
+  Sprites.draw(g,f,Game.roster[f.idx]);
   g.filter='none';
   g.restore();
 }
@@ -1734,6 +1760,36 @@ document.getElementById('nClose').onclick=()=>{
   document.getElementById('netui').style.display='none';
   document.activeElement?.blur(); clearKeys();
 };
+function syncCharacterPickers(){
+  const locked=!['idle','disconnected','error'].includes(Net.state);
+  document.querySelectorAll('[data-picker]').forEach(picker=>{
+    picker.querySelectorAll('button').forEach(button=>{
+      button.disabled=locked;
+      button.setAttribute('aria-pressed',String(selection[picker.dataset.picker]===button.dataset.character));
+    });
+  });
+  const start=document.getElementById('start');
+  if(start) start.disabled=locked;
+}
+document.querySelectorAll('[data-picker]').forEach(picker=>{
+  for(const character of CHARACTERS){
+    const button=document.createElement('button');
+    button.type='button'; button.className='character-card'; button.dataset.character=character.id;
+    button.style.setProperty('--character',character.color);
+    const preview=document.createElement('span');
+    preview.className='character-preview'; preview.setAttribute('aria-hidden','true');
+    preview.style.backgroundImage='url("'+character.image+'")';
+    const name=document.createElement('span'); name.textContent=character.name;
+    button.append(preview,name);
+    button.onclick=()=>{
+      if(!['idle','disconnected','error'].includes(Net.state)) return;
+      selection[picker.dataset.picker]=character.id;
+      syncCharacterPickers();
+    };
+    picker.append(button);
+  }
+});
+syncCharacterPickers();
 const outEl=document.getElementById('netout'), inEl=document.getElementById('netin');
 document.getElementById('nHost').onclick=async()=>{
   Audio5.init();Audio5.resume();outEl.value='';
@@ -1779,7 +1835,7 @@ document.getElementById('start').addEventListener('click',()=>{
   document.getElementById('boot')?.remove();
   document.activeElement?.blur();
   if('ontouchstart' in window) touchRoot.classList.add('on');
-  cachePadRects(); syncToggles(); startMatch();
+  cachePadRects(); syncToggles(); startMatch(undefined,[selection.local,selection.opponent]);
 });
 
 /* ================= PHASE 11.2 — PRELOADER BOOT SEQUENCE =================
@@ -1806,18 +1862,30 @@ async function boot(){
     CONFIG_FINGERPRINT = configFingerprint({fighter:loader.assets.fighter,
       rules:loader.assets.rules,stage:loader.assets.stage});
     const sources=await Promise.all(['index.html','shared/netplay.js','shared/lockstep.js',
-      'shared/configLoader.js','shared/integrity.js','shared/sprites.js',
-      'assets/fighters/keyzip.json','assets/fighters/keyzip.png'].map(async path=>{
+      'shared/configLoader.js','shared/integrity.js','shared/sprites.js','shared/characters.js',
+      'assets/fighters/ai.json',...CHARACTERS.map(character=>character.image)].map(async path=>{
       const response=await fetch(new URL(path,location.href),{cache:'no-store'});
       if(!response.ok) throw new Error('无法读取构建指纹 '+path);
-      return path.endsWith('.png') ? Array.from(new Uint8Array(await response.arrayBuffer())) : response.text();
+      if(!path.endsWith('.png')) return response.text();
+      const digest=await crypto.subtle.digest('SHA-256',await response.arrayBuffer());
+      return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
     }));
     BUILD_FINGERPRINT=configFingerprint(sources);
     applyStage(loader.assets.stage);
     applyConfig(loader.assets.fighter,loader.assets.rules,loader.assets.stage);
     resize();
 
-    await loader.runStep('atlas.p1', async()=>{ Sprites=await loadSprites(); return true; });
+    await loader.runStep('atlas.p1', async()=>{ Sprites=await loadSprites();
+      document.querySelectorAll('.character-card').forEach(card=>{
+        const {image,meta}=Sprites.characters[card.dataset.character];
+        const [x,y,w,h]=meta.frames.idle0.rect;
+        const preview=card.querySelector('.character-preview');
+        preview.style.height='var(--preview-height)';
+        preview.style.width='calc(var(--preview-height) * '+(w/h)+')';
+        preview.style.backgroundSize=(image.naturalWidth/w*100)+'% '+(image.naturalHeight/h*100)+'%';
+        preview.style.backgroundPosition=(x/(image.naturalWidth-w)*100)+'% '+(y/(image.naturalHeight-h)*100)+'%';
+      });
+      return true; });
     await loader.runStep('atlas.p2', ()=>true);
     await loader.runStep('stage.bg', ()=>{ buildBackground(); return true; });
     await loader.runStep('audio.sfx',()=>true);          // buffers render on user gesture
@@ -1830,7 +1898,9 @@ async function boot(){
       FX, Cam, Net, DEBUG, Projectiles, snapshot,
       sprites:Object.freeze({frame:side=>{
         if(side!=='p1' && side!=='p2') throw new RangeError('Unknown fighter side '+side);
-        return Sprites.frame(side==='p1'?P1:P2);
+        const fighter=side==='p1'?P1:P2;
+        const character=Game.roster[fighter.idx];
+        return {...Sprites.frame(fighter,character),character};
       }}),
       hashGameState, configFingerprint, auditFighterConfig,
       get fingerprint(){ return CONFIG_FINGERPRINT; },
