@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir site
           cp index.html manifest.webmanifest favicon.ico LICENSE site/
-          cp -R data icons shared site/
+          cp -R data icons shared assets site/
           touch site/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:

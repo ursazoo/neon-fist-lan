@@ -57,12 +57,16 @@ npm run dev
 
 ## 运行验证
 
+角色采用逐帧精灵，来源及独立素材许可证见 [素材署名](assets/fighters/CREDITS.md)。两位玩家共用动作素材，通过配色和镜像区分。动画时间跟随战斗模拟帧，等待远端输入、暂停和命中停顿时停止播放。
+
 ```sh
 npm run check
-node --test tests/lockstep.test.mjs
+node --test tests/*.test.mjs
 npm run test:browser
 ```
 
 浏览器测试使用本机 Chrome 的真实 WebRTC 和两个独立窗口，完成手动信令、键盘移动与攻击、共同帧状态校验和断线检查。默认使用 macOS 的 Google Chrome；其他位置可通过 `CHROME_BIN` 指定。测试无需 Playwright 或下载浏览器。
 
 浏览器测试将截图与结果写入 `artifacts/`。单机双窗口测试不能替代两台实体电脑在目标 Wi-Fi 下的验收。
+
+逐帧动作的浏览器检查可复用已启动的 Chrome CDP 与本地预览，运行 `CDP_PORT=19334 SITE_URL=http://127.0.0.1:4174/ node tests/sprites.browser.mjs`。该检查使用真实键盘事件验证完整帧序列，并将动作记录保存到 `artifacts/sprites/`。

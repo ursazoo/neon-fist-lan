@@ -183,6 +183,7 @@
        联机双方均使用 WASD + JKL。主机控制 P1，客机控制 P2。</p>
     <div class="row"><button class="btn" id="start">本地练习</button>
     <button class="btn" id="openNet">同 Wi-Fi 联机</button></div>
+    <p><a href="assets/fighters/CREDITS.md" style="color:inherit">Sprites by KeyZip · CC BY 3.0</a></p>
   </div>
 </div>
 <script type="module">
@@ -191,6 +192,8 @@ import { AssetLoader } from './shared/configLoader.js';
 import { auditFighterConfig, configFingerprint, hashGameState }
   from './shared/integrity.js';
 import { createSession } from './shared/netplay.js';
+import { loadSprites } from './shared/sprites.js';
+let Sprites = null;
 let CONFIG_FINGERPRINT = null;
 let BUILD_FINGERPRINT = null;
 const INPUT_DELAY = 2;
@@ -296,18 +299,7 @@ const scaleAt = (tbl,n)=> tbl[Math.min(n, tbl.length-1)];
 
 
 /* ============================ PHASE 4 + 9.1 ======================== */
-/* Sprite cells are drawn once, trimmed of transparent margin, then
-   skyline-packed into ONE shared texture atlas for BOTH fighters.
-   That is the real VRAM win: 1 texture upload instead of 2 grids of
-   mostly-empty 128x160 cells.                                         */
-/* Cell must contain the WIDEST and TALLEST pose, not the average one.
-   Measured ink extents from the origin (feet centre) across all 37 poses:
-   left 81, right 107, up 201 (uppercut), down 48 (KO sprawl). Undersized
-   cells silently guillotined heads and the uppercut fist. The atlas packer
-   trims each frame afterwards, so the generous cell costs no VRAM.      */
-const CELL_W = 200, CELL_H = 264;
-const OX = 92, OY = 212;
-
+/* Legacy animation fields remain part of deterministic fighter snapshots. */
 const ANIM = {
   idle:       {cells:[0,1,2,1],   hold:8,  loop:true },
   walk:       {cells:[3,4,5,4],   hold:6,  loop:true },
@@ -328,7 +320,6 @@ const ANIM = {
   uppercut:   {cells:[30,31,32],  hold:0,  loop:false},
   spinKick:   {cells:[33,34,35,36],hold:0, loop:false}
 };
-const TOTAL_CELLS = 37;
 
 /* frame maps tie animation cells to frame-data phases (Phase 4.2).
    altRate makes multi-hit actives alternate cells.                     */
@@ -344,154 +335,10 @@ const FRAME_MAPS = {
   spinKick: {s:[0],a:[1,2],r:[3],altRate:3}
 };
 
-function drawCell(g,i,P){
-  g.translate(OX,OY);
-  const S = {
-    0:{lean:0,crouch:0,fa:[16,-104,30,-96],ba:[-14,-102,-30,-92],lf:[16,-10],lb:[-18,-8],hy:-152},
-    1:{lean:0,crouch:2,fa:[16,-102,30,-94],ba:[-14,-100,-30,-90],lf:[16,-10],lb:[-18,-8],hy:-150},
-    2:{lean:0,crouch:4,fa:[16,-100,28,-92],ba:[-14,-98,-28,-88],lf:[16,-10],lb:[-18,-8],hy:-148},
-    3:{lean:3,crouch:2,fa:[18,-102,34,-98],ba:[-14,-100,-32,-96],lf:[30,-6],lb:[-26,-6],hy:-150},
-    4:{lean:2,crouch:6,fa:[16,-100,30,-96],ba:[-14,-98,-28,-92],lf:[12,-8],lb:[-12,-8],hy:-146},
-    5:{lean:4,crouch:2,fa:[18,-102,36,-92],ba:[-14,-100,-34,-90],lf:[34,-4],lb:[-22,-8],hy:-150},
-    6:{lean:6,crouch:56,fa:[16,-58,32,-54],ba:[-12,-56,-26,-50],lf:[26,-4],lb:[-22,-4],hy:-96},
-    7:{lean:4,crouch:14,fa:[16,-108,34,-124],ba:[-14,-104,-30,-120],lf:[18,-34],lb:[-16,-40],hy:-152,air:1},
-    8:{lean:6,crouch:10,fa:[16,-106,36,-112],ba:[-14,-104,-32,-118],lf:[26,-28],lb:[-20,-34],hy:-152,air:1},
-    9:{lean:2,crouch:4,fa:[16,-104,34,-102],ba:[-14,-100,-30,-92],lf:[18,-8],lb:[-20,-8],hy:-150},
-   10:{lean:8,crouch:2,fa:[18,-104,86,-104],ba:[-14,-100,-34,-96],lf:[30,-6],lb:[-26,-6],hy:-150,fist:1},
-   11:{lean:4,crouch:6,fa:[16,-104,50,-102],ba:[-14,-100,-32,-94],lf:[22,-8],lb:[-22,-8],hy:-150},
-   12:{lean:-4,crouch:8,fa:[14,-104,26,-110],ba:[-16,-100,-36,-92],lf:[10,-20],lb:[-24,-6],hy:-152},
-   13:{lean:10,crouch:4,fa:[16,-104,40,-116],ba:[-16,-100,-40,-96],lf:[96,-72],lb:[-26,-6],hy:-150,foot:1},
-   14:{lean:2,crouch:12,fa:[14,-102,30,-104],ba:[-16,-98,-34,-92],lf:[40,-30],lb:[-24,-6],hy:-148},
-   15:{lean:8,crouch:56,fa:[14,-58,30,-56],ba:[-12,-56,-28,-50],lf:[40,-8],lb:[-22,-4],hy:-96},
-   16:{lean:10,crouch:60,fa:[14,-54,28,-52],ba:[-12,-52,-26,-46],lf:[92,-14],lb:[-22,-4],hy:-92,foot:1},
-   17:{lean:8,crouch:12,fa:[16,-108,38,-118],ba:[-14,-104,-32,-116],lf:[92,-48],lb:[-14,-30],hy:-152,air:1,foot:1},
-   18:{lean:-4,crouch:10,fa:[10,-104,22,-124],ba:[-10,-100,4,-116],lf:[16,-8],lb:[-22,-8],hy:-150,guard:1},
-   19:{lean:-4,crouch:58,fa:[10,-58,20,-78],ba:[-10,-56,2,-72],lf:[24,-4],lb:[-22,-4],hy:-94,guard:1},
-   20:{lean:-12,crouch:6,fa:[10,-100,-14,-118],ba:[-16,-98,-40,-108],lf:[8,-10],lb:[-30,-6],hy:-148,hurt:1},
-   21:{lean:-18,crouch:14,fa:[8,-96,-22,-112],ba:[-18,-94,-46,-100],lf:[2,-12],lb:[-36,-6],hy:-142,hurt:1},
-   22:{lean:-24,crouch:26,fa:[4,-88,-30,-104],ba:[-20,-86,-52,-92],lf:[-4,-14],lb:[-40,-8],hy:-130,hurt:1},
-   23:{lean:-40,crouch:60,fa:[-4,-56,-44,-64],ba:[-24,-54,-64,-52],lf:[-20,-12],lb:[-52,-8],hy:-92,hurt:1},
-   24:{lean:-70,crouch:104,fa:[-20,-18,-70,-14],ba:[-30,-16,-74,-22],lf:[-40,-10],lb:[-66,-8],hy:-34,hurt:1},
-   25:{lean:0,crouch:0,fa:[16,-106,26,-140],ba:[-14,-102,-28,-96],lf:[16,-10],lb:[-18,-8],hy:-154},
-   26:{lean:0,crouch:4,fa:[16,-104,30,-134],ba:[-14,-100,-26,-92],lf:[16,-10],lb:[-18,-8],hy:-150},
-   /* fireball */
-   27:{lean:-8,crouch:16,fa:[-4,-88,-26,-78],ba:[-12,-92,-32,-82],lf:[14,-8],lb:[-20,-8],hy:-144},
-   28:{lean:10,crouch:6,fa:[18,-100,64,-96],ba:[8,-96,52,-88],lf:[30,-6],lb:[-24,-6],hy:-148,fist:1,palm:1},
-   29:{lean:4,crouch:12,fa:[16,-100,44,-96],ba:[4,-96,32,-90],lf:[24,-8],lb:[-22,-8],hy:-146},
-   /* uppercut */
-   30:{lean:-8,crouch:40,fa:[10,-70,22,-50],ba:[-12,-88,-26,-78],lf:[18,-6],lb:[-20,-6],hy:-112},
-   31:{lean:6,crouch:0,fa:[10,-120,16,-188],ba:[-14,-100,-30,-92],lf:[10,-26],lb:[-18,-18],hy:-158,air:1,fist:1},
-   32:{lean:2,crouch:6,fa:[12,-110,22,-152],ba:[-14,-100,-28,-96],lf:[16,-20],lb:[-16,-16],hy:-152,air:1},
-   /* spin kick */
-   33:{lean:-8,crouch:18,fa:[16,-108,42,-122],ba:[-16,-104,-44,-112],lf:[16,-8],lb:[-22,-8],hy:-148},
-   34:{lean:12,crouch:8,fa:[14,-104,-18,-126],ba:[-18,-100,42,-110],lf:[98,-102],lb:[-18,-6],hy:-150,foot:1,air:1},
-   35:{lean:-14,crouch:10,fa:[-12,-104,-50,-94],ba:[10,-100,40,-120],lf:[-66,-98],lb:[18,-8],hy:-148,foot:1,air:1},
-   36:{lean:4,crouch:20,fa:[14,-104,32,-108],ba:[-16,-100,-34,-96],lf:[34,-10],lb:[-22,-6],hy:-142}
-  }[i];
-  if(!S) return;
-
-  const skin=P.skin, gi=P.gi, trim=P.trim, dark=P.dark;
-  const hipY = -58 + S.crouch*0.55, headY = S.hy + S.crouch*0.35;
-  const lean = S.lean*0.5;
-  const limb=(x1,y1,x2,y2,w,col)=>{
-    g.strokeStyle=col; g.lineWidth=w; g.lineCap='round';
-    g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
-  };
-  limb(0,hipY,S.lb[0],hipY/2, 15, dark);
-  limb(S.lb[0],hipY/2,S.lb[0],S.lb[1], 13, dark);
-  limb(lean,headY+40,S.ba[0],S.ba[1],11,dark);
-  limb(S.ba[0],S.ba[1],S.ba[2],S.ba[3],10,dark);
-  g.fillStyle=gi;
-  g.beginPath();
-  g.moveTo(lean-22,headY+34); g.lineTo(lean+22,headY+34);
-  g.lineTo(16,hipY+6); g.lineTo(-16,hipY+6); g.closePath(); g.fill();
-  g.fillStyle=trim; g.fillRect(-17,hipY-4,34,9);
-  limb(0,hipY,S.lf[0]*0.55,(hipY+S.lf[1])/2, 16, gi);
-  limb(S.lf[0]*0.55,(hipY+S.lf[1])/2,S.lf[0],S.lf[1], 14, skin);
-  if(S.foot){ g.fillStyle=trim; g.beginPath(); g.arc(S.lf[0],S.lf[1],10,0,7); g.fill(); }
-  else { g.fillStyle=dark; g.fillRect(S.lf[0]-9,S.lf[1]-4,20,9); }
-  g.fillStyle=skin;
-  g.beginPath(); g.ellipse(lean, headY+12, 17, 20, 0,0,7); g.fill();
-  g.fillStyle=P.hair;
-  g.beginPath(); g.ellipse(lean, headY+1, 18, 12, 0,Math.PI,0); g.fill();
-  g.fillStyle=trim; g.fillRect(lean-19,headY+6,38,5);
-  if(!S.hurt){ g.fillStyle='#120c18'; g.fillRect(lean+5,headY+12,7,3); }
-  else { g.strokeStyle='#120c18'; g.lineWidth=2;
-    g.beginPath(); g.moveTo(lean+3,headY+10); g.lineTo(lean+11,headY+16);
-    g.moveTo(lean+11,headY+10); g.lineTo(lean+3,headY+16); g.stroke(); }
-  limb(lean+6,headY+40,S.fa[0],S.fa[1],13,skin);
-  limb(S.fa[0],S.fa[1],S.fa[2],S.fa[3],12,skin);
-  g.fillStyle=S.guard?trim:P.glove;
-  g.beginPath(); g.arc(S.fa[2],S.fa[3], S.fist?13:11, 0,7); g.fill();
-  if(S.guard||S.palm){ g.fillStyle=S.palm?P.glove:trim;
-    g.beginPath(); g.arc(S.ba[2],S.ba[3],S.palm?12:11,0,7); g.fill(); }
-  if(S.palm){ g.fillStyle='rgba(120,220,255,.55)';
-    g.beginPath(); g.arc((S.fa[2]+S.ba[2])/2+10,(S.fa[3]+S.ba[3])/2,15,0,7); g.fill(); }
-}
-
 const PAL = {
   p1:{skin:'#f2c39b',gi:'#2ee0c2',trim:'#0f2f38',dark:'#1a9c8a',hair:'#20303a',glove:'#ff5a3c'},
   p2:{skin:'#e8b48c',gi:'#ff5a7a',trim:'#3a0f22',dark:'#c33456',hair:'#2b1520',glove:'#ffd23f'}
 };
-
-/* ---- 9.1 skyline texture-atlas packer ------------------------------ */
-const Atlas = { canvas:null, frames:{}, stats:{} };
-
-function packAtlas(){
-  const tmp = document.createElement('canvas');
-  tmp.width=CELL_W; tmp.height=CELL_H;
-  const tg = tmp.getContext('2d', {willReadFrequently:true});
-  const items=[];
-  for(const side of ['p1','p2']){
-    for(let i=0;i<TOTAL_CELLS;i++){
-      tg.clearRect(0,0,CELL_W,CELL_H);
-      tg.save(); drawCell(tg,i,PAL[side]); tg.restore();
-      const d = tg.getImageData(0,0,CELL_W,CELL_H).data;
-      let x0=CELL_W,y0=CELL_H,x1=-1,y1=-1;
-      for(let y=0;y<CELL_H;y++){
-        for(let x=0;x<CELL_W;x++){
-          if(d[(y*CELL_W+x)*4+3]>8){
-            if(x<x0)x0=x; if(x>x1)x1=x;
-            if(y<y0)y0=y; if(y>y1)y1=y;
-          }
-        }
-      }
-      if(x1<0){ x0=y0=0; x1=y1=1; }
-      const pad=1;
-      items.push({id:side+':'+i, cell:i, side,
-        ox:x0-pad, oy:y0-pad, w:(x1-x0+1)+pad*2, h:(y1-y0+1)+pad*2});
-    }
-  }
-  // shelf-pack tallest-first into a power-of-two-ish sheet
-  items.sort((a,b)=> b.h-a.h);
-  const AW = 1024;
-  let sx=0, sy=0, shelfH=0;
-  for(const it of items){
-    if(sx+it.w>AW){ sx=0; sy+=shelfH; shelfH=0; }
-    it.ax=sx; it.ay=sy; sx+=it.w; if(it.h>shelfH) shelfH=it.h;
-  }
-  const AH = sy+shelfH;
-  const at = document.createElement('canvas');
-  at.width=AW; at.height=AH;
-  const ag = at.getContext('2d');
-  for(const it of items){
-    ag.save();
-    ag.beginPath(); ag.rect(it.ax,it.ay,it.w,it.h); ag.clip();
-    ag.translate(it.ax - it.ox, it.ay - it.oy);
-    drawCell(ag,it.cell,PAL[it.side]);
-    ag.restore();
-    Atlas.frames[it.id]={x:it.ax,y:it.ay,w:it.w,h:it.h,ox:it.ox,oy:it.oy};
-  }
-  Atlas.canvas=at;
-  const usedPx = items.reduce((s,i)=>s+i.w*i.h,0);
-  Atlas.stats={
-    w:AW,h:AH, frames:items.length,
-    fill:(usedPx/(AW*AH)*100).toFixed(1),
-    naiveMB:((TOTAL_CELLS*2*CELL_W*CELL_H*4)/1048576).toFixed(2),
-    atlasMB:((AW*AH*4)/1048576).toFixed(2)
-  };
-}
-
 
 /* ============================ PHASE 5 + 9.2 ======================== */
 /* WebAudio with a pre-allocated gain-node pool. BufferSources are
@@ -1720,14 +1567,12 @@ function buildBackground(){
 }
 
 function drawFighter(g,f){
-  const fr=Atlas.frames[f.side+':'+f.cell()];
-  if(!fr) return;
   g.save();
   g.translate(f.x, f.y);
   g.scale(f.face,1);
   if(f.flash>0) g.filter='brightness(2.4) saturate(0.4)';
   else if(f.invuln>0 && (Game.frame>>1)%2===0) g.filter='brightness(1.6) hue-rotate(70deg)';
-  g.drawImage(Atlas.canvas, fr.x,fr.y,fr.w,fr.h, fr.ox-OX, fr.oy-OY, fr.w, fr.h);
+  Sprites.draw(g,f);
   g.filter='none';
   g.restore();
 }
@@ -1813,9 +1658,8 @@ function updateDiag(dt){
     'step        '+DEBUG.stepMs.toFixed(2)+' ms\n'+
     'particles  '+FX.live+' live / '+FX.peak+' peak / '+MAX_PARTS+' pooled\n'+
     'audio gain '+Audio5.poolInfo+' pooled\n'+
-    'atlas      '+Atlas.stats.w+'x'+Atlas.stats.h+'  '+Atlas.stats.frames+' frames  '+
-       Atlas.stats.fill+'% fill\n'+
-    'VRAM       '+Atlas.stats.atlasMB+' MB atlas vs '+Atlas.stats.naiveMB+' MB naive grid\n'+
+    'sprites    '+Sprites.image.naturalWidth+'x'+Sprites.image.naturalHeight+'  '+
+       Object.keys(Sprites.meta.frames).length+' frames\n'+
     'JS heap    '+heap+'\n'+
     'net        '+Net.state+' '+(Net.role||'')+' frame '+Game.frame+'\n'+
     'buffer P1  '+['punch','kick','up'].map(k=>k[0]+':'+(P1.buf.pressAge[k]>20?'-':P1.buf.pressAge[k])).join(' ')+
@@ -1940,7 +1784,7 @@ document.getElementById('start').addEventListener('click',()=>{
 
 /* ================= PHASE 11.2 — PRELOADER BOOT SEQUENCE =================
    Nothing simulates until every config is fetched+validated and every
-   generated asset (atlases, stage, audio buffers) is built. The progress
+   sprite image is decoded and generated assets are ready. The progress
    bar is weighted so it reflects real work, not file count.            */
 async function boot(){
   const bar   = document.getElementById('loadBar');
@@ -1962,18 +1806,19 @@ async function boot(){
     CONFIG_FINGERPRINT = configFingerprint({fighter:loader.assets.fighter,
       rules:loader.assets.rules,stage:loader.assets.stage});
     const sources=await Promise.all(['index.html','shared/netplay.js','shared/lockstep.js',
-      'shared/configLoader.js','shared/integrity.js'].map(async path=>{
+      'shared/configLoader.js','shared/integrity.js','shared/sprites.js',
+      'assets/fighters/keyzip.json','assets/fighters/keyzip.png'].map(async path=>{
       const response=await fetch(new URL(path,location.href),{cache:'no-store'});
       if(!response.ok) throw new Error('无法读取构建指纹 '+path);
-      return response.text();
+      return path.endsWith('.png') ? Array.from(new Uint8Array(await response.arrayBuffer())) : response.text();
     }));
     BUILD_FINGERPRINT=configFingerprint(sources);
     applyStage(loader.assets.stage);
     applyConfig(loader.assets.fighter,loader.assets.rules,loader.assets.stage);
     resize();
 
-    await loader.runStep('atlas.p1', ()=>{ packAtlas(); return true; });
-    await loader.runStep('atlas.p2', ()=>true);          // both palettes in one atlas
+    await loader.runStep('atlas.p1', async()=>{ Sprites=await loadSprites(); return true; });
+    await loader.runStep('atlas.p2', ()=>true);
     await loader.runStep('stage.bg', ()=>{ buildBackground(); return true; });
     await loader.runStep('audio.sfx',()=>true);          // buffers render on user gesture
     await loader.runStep('audio.bgm',()=>true);
@@ -1982,7 +1827,11 @@ async function boot(){
 
     window.NEON = {
       Game, P1, P2, MOVES, PHYS, MOTIONS, SCALING, HURT, RULES, STAGE,
-      Atlas, FX, Cam, Net, DEBUG, Projectiles, snapshot,
+      FX, Cam, Net, DEBUG, Projectiles, snapshot,
+      sprites:Object.freeze({frame:side=>{
+        if(side!=='p1' && side!=='p2') throw new RangeError('Unknown fighter side '+side);
+        return Sprites.frame(side==='p1'?P1:P2);
+      }}),
       hashGameState, configFingerprint, auditFighterConfig,
       get fingerprint(){ return CONFIG_FINGERPRINT; },
       get bufferLen(){ return BUFFER_LEN; },
