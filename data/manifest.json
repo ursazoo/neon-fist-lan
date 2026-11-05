@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "data": [
+    {
+      "id": "rules",
+      "url": "data/rules.json",
+      "type": "json",
+      "weight": 1
+    },
+    {
+      "id": "stage",
+      "url": "data/stage.synthwave.json",
+      "type": "json",
+      "weight": 1
+    },
+    {
+      "id": "fighter",
+      "url": "data/fighter.neon.json",
+      "type": "json",
+      "weight": 3
+    }
+  ],
+  "generated": [
+    {
+      "id": "atlas.p1",
+      "type": "atlas",
+      "weight": 8
+    },
+    {
+      "id": "atlas.p2",
+      "type": "atlas",
+      "weight": 8
+    },
+    {
+      "id": "stage.bg",
+      "type": "canvas",
+      "weight": 4
+    },
+    {
+      "id": "audio.sfx",
+      "type": "audio",
+      "weight": 6
+    },
+    {
+      "id": "audio.bgm",
+      "type": "audio",
+      "weight": 10
+    }
+  ]
+}

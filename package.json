@@ -1,0 +1,13 @@
+{
+  "name": "neon-fist-lan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Neon Fist for static hosting and two-keyboard LAN netplay",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node preview.mjs",
+    "check": "node tests/static.mjs",
+    "test:browser": "node tests/browser.mjs"
+  }
+}

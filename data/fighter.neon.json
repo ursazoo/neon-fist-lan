@@ -1,0 +1,367 @@
+{
+  "$schema": "./schema/fighter.schema.json",
+  "id": "ryu-neon",
+  "displayName": "NEON",
+  "version": "1.0.0",
+  "physics": {
+    "gravity": 0.92,
+    "jumpVel": -17.4,
+    "walkSpeed": 4.1,
+    "backSpeed": 3.2,
+    "airDrift": 0.55,
+    "friction": 0.78,
+    "airFriction": 0.965,
+    "maxPush": 16
+  },
+  "scaling": {
+    "damage": [
+      1,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.6,
+      0.5,
+      0.45,
+      0.4,
+      0.35,
+      0.3
+    ],
+    "hitstun": [
+      1,
+      1,
+      0.96,
+      0.92,
+      0.88,
+      0.85,
+      0.82,
+      0.8,
+      0.78,
+      0.76,
+      0.74
+    ],
+    "gravity": [
+      1,
+      1,
+      1.06,
+      1.14,
+      1.24,
+      1.36,
+      1.5,
+      1.66,
+      1.84,
+      2,
+      2.2
+    ],
+    "minDamage": 1,
+    "comboDecay": 26
+  },
+  "hurtboxes": {
+    "stand": [
+      {
+        "x": -24,
+        "y": -152,
+        "w": 48,
+        "h": 56
+      },
+      {
+        "x": -26,
+        "y": -100,
+        "w": 54,
+        "h": 100
+      }
+    ],
+    "crouch": [
+      {
+        "x": -26,
+        "y": -92,
+        "w": 54,
+        "h": 92
+      }
+    ],
+    "air": [
+      {
+        "x": -24,
+        "y": -132,
+        "w": 50,
+        "h": 60
+      },
+      {
+        "x": -24,
+        "y": -78,
+        "w": 48,
+        "h": 70
+      }
+    ],
+    "hit": [
+      {
+        "x": -30,
+        "y": -146,
+        "w": 54,
+        "h": 146
+      }
+    ],
+    "ko": [
+      {
+        "x": -46,
+        "y": -46,
+        "w": 98,
+        "h": 46
+      }
+    ]
+  },
+  "motions": [
+    {
+      "move": "uppercut",
+      "btn": "punch",
+      "seq": [
+        6,
+        2,
+        3
+      ],
+      "window": 16,
+      "priority": 3
+    },
+    {
+      "move": "fireball",
+      "btn": "punch",
+      "seq": [
+        2,
+        3,
+        6
+      ],
+      "window": 14,
+      "priority": 2
+    },
+    {
+      "move": "spinKick",
+      "btn": "kick",
+      "seq": [
+        2,
+        1,
+        4
+      ],
+      "window": 14,
+      "priority": 2
+    }
+  ],
+  "moves": {
+    "punch": {
+      "key": "punch",
+      "anim": "punch",
+      "startup": 4,
+      "active": 3,
+      "recovery": 9,
+      "damage": 7,
+      "chip": 1,
+      "hitstun": 15,
+      "blockstun": 9,
+      "pushHit": 5,
+      "pushBlock": 3.4,
+      "selfPush": 0.6,
+      "height": "mid",
+      "weight": "light",
+      "sfx": "punch",
+      "meter": 6,
+      "box": {
+        "x": 26,
+        "y": -108,
+        "w": 62,
+        "h": 26
+      },
+      "cancelInto": [
+        "kick",
+        "fireball",
+        "uppercut",
+        "spinKick"
+      ],
+      "cancelOnBlock": true
+    },
+    "kick": {
+      "key": "kick",
+      "anim": "kick",
+      "startup": 8,
+      "active": 4,
+      "recovery": 16,
+      "damage": 13,
+      "chip": 2,
+      "hitstun": 22,
+      "blockstun": 12,
+      "pushHit": 9,
+      "pushBlock": 5.6,
+      "selfPush": 1.2,
+      "height": "mid",
+      "weight": "heavy",
+      "sfx": "kick",
+      "meter": 9,
+      "box": {
+        "x": 24,
+        "y": -84,
+        "w": 80,
+        "h": 30
+      },
+      "cancelInto": [
+        "fireball",
+        "uppercut",
+        "spinKick"
+      ],
+      "cancelOnBlock": true
+    },
+    "lowKick": {
+      "key": "lowKick",
+      "anim": "crouchKick",
+      "startup": 6,
+      "active": 3,
+      "recovery": 13,
+      "damage": 9,
+      "chip": 1,
+      "hitstun": 18,
+      "blockstun": 10,
+      "pushHit": 5.5,
+      "pushBlock": 3.6,
+      "selfPush": 0.4,
+      "height": "low",
+      "weight": "light",
+      "sfx": "kick",
+      "meter": 7,
+      "box": {
+        "x": 22,
+        "y": -34,
+        "w": 74,
+        "h": 26
+      },
+      "cancelInto": [
+        "fireball",
+        "uppercut",
+        "spinKick"
+      ],
+      "cancelOnBlock": true
+    },
+    "jumpKick": {
+      "key": "jumpKick",
+      "anim": "jumpKick",
+      "startup": 5,
+      "active": 8,
+      "recovery": 6,
+      "damage": 11,
+      "chip": 2,
+      "hitstun": 20,
+      "blockstun": 11,
+      "pushHit": 6,
+      "pushBlock": 4,
+      "selfPush": 0,
+      "height": "overhead",
+      "weight": "heavy",
+      "sfx": "kick",
+      "meter": 8,
+      "box": {
+        "x": 22,
+        "y": -78,
+        "w": 74,
+        "h": 34
+      },
+      "air": true,
+      "cancelInto": []
+    },
+    "fireball": {
+      "key": "fireball",
+      "anim": "fireball",
+      "startup": 11,
+      "active": 2,
+      "recovery": 26,
+      "damage": 0,
+      "chip": 0,
+      "hitstun": 0,
+      "blockstun": 0,
+      "pushHit": 0,
+      "pushBlock": 0,
+      "selfPush": 0,
+      "height": "mid",
+      "weight": "light",
+      "sfx": "fire",
+      "meter": 0,
+      "special": true,
+      "projectile": true,
+      "box": null,
+      "cancelInto": []
+    },
+    "uppercut": {
+      "key": "uppercut",
+      "anim": "uppercut",
+      "startup": 3,
+      "active": 12,
+      "recovery": 30,
+      "damage": 16,
+      "chip": 3,
+      "hitstun": 34,
+      "blockstun": 14,
+      "pushHit": 3,
+      "pushBlock": 5,
+      "selfPush": 0,
+      "height": "mid",
+      "weight": "heavy",
+      "sfx": "kick",
+      "meter": 0,
+      "special": true,
+      "invuln": [
+        0,
+        6
+      ],
+      "launcher": -15.5,
+      "box": {
+        "x": 6,
+        "y": -186,
+        "w": 62,
+        "h": 120
+      },
+      "riseVel": -14.2,
+      "cancelInto": []
+    },
+    "spinKick": {
+      "key": "spinKick",
+      "anim": "spinKick",
+      "startup": 7,
+      "active": 14,
+      "recovery": 22,
+      "damage": 14,
+      "chip": 3,
+      "hitstun": 26,
+      "blockstun": 13,
+      "pushHit": 8,
+      "pushBlock": 6,
+      "selfPush": 0,
+      "height": "mid",
+      "weight": "heavy",
+      "sfx": "kick",
+      "meter": 0,
+      "special": true,
+      "multiHit": 6,
+      "box": {
+        "x": 14,
+        "y": -118,
+        "w": 92,
+        "h": 96
+      },
+      "driveVel": 6.4,
+      "cancelInto": []
+    }
+  },
+  "palettes": {
+    "p1": {
+      "skin": "#f2c39b",
+      "gi": "#2ee0c2",
+      "trim": "#0f2f38",
+      "dark": "#1a9c8a",
+      "hair": "#20303a",
+      "glove": "#ff5a3c"
+    },
+    "p2": {
+      "skin": "#e8b48c",
+      "gi": "#ff5a7a",
+      "trim": "#3a0f22",
+      "dark": "#c33456",
+      "hair": "#2b1520",
+      "glove": "#ffd23f"
+    }
+  }
+}

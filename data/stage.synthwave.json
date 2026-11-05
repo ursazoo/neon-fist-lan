@@ -1,0 +1,29 @@
+{
+  "id": "synthwave-rooftop",
+  "displayName": "SYNTHWAVE ROOFTOP",
+  "world": {
+    "width": 960,
+    "height": 540,
+    "floorY": 452,
+    "wallLeft": 40,
+    "wallRight": 920
+  },
+  "camera": {
+    "minZoom": 1,
+    "maxZoom": 1.34,
+    "zoomDistanceDivisor": 1150,
+    "followLerpX": 0.1,
+    "followLerpY": 0.08,
+    "shakeDecay": 0.86
+  },
+  "colors": {
+    "skyTop": "#170a28",
+    "skyMid": "#3a1250",
+    "skyBottom": "#7a1f5c",
+    "sunTop": "#ffd23f",
+    "sunBottom": "#ff2f7a",
+    "grid": "rgba(255,80,160,.35)",
+    "horizon": "#ff5ab0",
+    "building": "#1a0b2e"
+  }
+}

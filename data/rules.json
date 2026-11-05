@@ -1,0 +1,22 @@
+{
+  "roundTime": 99,
+  "maxRounds": 3,
+  "winsNeeded": 2,
+  "maxHp": 100,
+  "maxMeter": 100,
+  "introReadyFrame": 70,
+  "introFightFrame": 130,
+  "koHoldFrames": 120,
+  "roundEndFrames": 110,
+  "inputBufferFrames": 10,
+  "inputDelayFrames": 2,
+  "rollbackMaxFrames": 8,
+  "hitstop": {
+    "block": 2,
+    "light": 3,
+    "heavy": 6,
+    "special": 8,
+    "multiHit": 2,
+    "ko": 18
+  }
+}
