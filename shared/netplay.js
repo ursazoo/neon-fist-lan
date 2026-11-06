@@ -14,6 +14,7 @@ const validEpoch = value => Number.isSafeInteger(value) && value >= 0;
 export function createSession(engine, onStatus) {
   let state = 'idle', role = null, id = '', epoch = 0, generation = 0;
   let pc = null, dc = null, queue = null, timer = null, connectTimer = null;
+  let externalDispose = null;
   let config = '', build = '', stage = '', hello = false, busy = false;
   let votes = [false, false], remoteEnd = null;
   let localCharacter = null, remoteCharacter = null, roster = null;
@@ -28,12 +29,12 @@ export function createSession(engine, onStatus) {
     onStatus({ state, role, epoch, message });
   }
   function resetClock() { acc = 0; last = null; }
-  function dispose() {
+  function dispose(reason = { state: 'idle', message: '连接已取消' }) {
     generation++;
     clearInterval(timer); timer = null;
     clearTimeout(connectTimer); connectTimer = null;
-    const oldDC = dc, oldPC = pc;
-    dc = null; pc = null;
+    const oldDC = dc, oldPC = pc, release = externalDispose;
+    dc = null; pc = null; externalDispose = null;
     if (oldDC) {
       oldDC.onopen = oldDC.onmessage = oldDC.onclose = oldDC.onerror = null;
       try { oldDC.close(); } catch {}
@@ -44,12 +45,13 @@ export function createSession(engine, onStatus) {
     }
     busy = false;
     resetClock();
+    release?.(reason);
   }
   function stop(message, next = 'error', notify = true) {
     if (notify && dc?.readyState === 'open') {
       try { dc.send(JSON.stringify({ v: VERSION, id, epoch, type: 'leave', reason: message })); } catch {}
     }
-    dispose();
+    dispose({ state: next, message });
     status(next, message + '。可重新创建或加入连接');
   }
   function send(type, fields = {}) {
@@ -180,8 +182,10 @@ export function createSession(engine, onStatus) {
       channel.close(); throw new Error('需要可靠有序的对战通道');
     }
     dc = channel;
+    let didOpen = false;
     dc.onopen = () => {
-      if (token !== generation) return;
+      if (token !== generation || didOpen) return;
+      didOpen = true;
       try {
         clearTimeout(connectTimer); connectTimer = null;
         opened = progress = received = clock();
@@ -205,8 +209,9 @@ export function createSession(engine, onStatus) {
     dc.onclose = dc.onerror = () => {
       if (token === generation) stop('连接已断开，比赛已冻结', 'disconnected', false);
     };
+    if (dc.readyState === 'open') queueMicrotask(dc.onopen);
   }
-  function begin(nextRole) {
+  function begin(nextRole, external = false) {
     dispose();
     role = nextRole; id = ''; epoch = 0; hello = false; stage = '';
     queue = null; history = []; hashes.clear(); pendingHashes.clear();
@@ -214,8 +219,9 @@ export function createSession(engine, onStatus) {
     if (!isCharacter(localCharacter)) throw new Error('角色选择无效');
     config = engine.config(); build = engine.build();
     if (!config || !build) throw new Error('游戏资源尚未加载');
-    status('signaling', role === 'host' ? '正在生成主机连接码' : '粘贴主机连接码，再点击接受');
+    status('signaling', external ? '正在连接房间' : role === 'host' ? '正在生成主机连接码' : '粘贴主机连接码，再点击接受');
     const token = generation;
+    if (external) return token;
     pc = new RTCPeerConnection({ iceServers: [] });
     pc.onconnectionstatechange = pc.oniceconnectionstatechange = () => {
       if (token !== generation) return;
@@ -271,6 +277,33 @@ export function createSession(engine, onStatus) {
   }
 
   return Object.freeze({
+    openTransport({ role: nextRole, dispose: release }) {
+      if (!['host', 'guest'].includes(nextRole) || typeof release !== 'function') {
+        throw new Error('外部连接参数无效');
+      }
+      let token;
+      try { token = begin(nextRole, true); }
+      catch (e) { stop(e.message); return null; }
+      externalDispose = release;
+      return Object.freeze({
+        attach({ id: sessionID, channel }) {
+          if (token !== generation) { channel.close(); return false; }
+          try {
+            if (typeof sessionID !== 'string' || !/^[a-f0-9]{32}$/.test(sessionID)) throw new Error('房间会话编号无效');
+            id = sessionID;
+            watchConnection(token);
+            wire(channel, token);
+            return true;
+          } catch (e) {
+            channel.close(); stop(e.message); return false;
+          }
+        },
+        close(reason) {
+          if (token === generation) stop(reason?.message || '已离开对局，比赛已冻结',
+            reason?.state === 'error' ? 'error' : 'disconnected');
+        }
+      });
+    },
     async host() {
       let token;
       try {
@@ -369,7 +402,7 @@ export function createSession(engine, onStatus) {
     get config() { return config; },
     get build() { return build; },
     get checkpoints() { return history.map(item => ({ ...item })); },
-    get pc() { return pc; },
-    getStats() { return pc?.getStats(); }
+    get pc() { return pc || dc?.peerConnection || null; },
+    getStats() { return (pc || dc?.peerConnection)?.getStats(); }
   });
 }

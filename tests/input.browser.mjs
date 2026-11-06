@@ -49,7 +49,7 @@ try{
   if(surface==='dialog')await click(p,'nClose');
   await p.eval('document.activeElement?.blur()');pass('sampled request is cancelled on '+surface);
  }
- const a=await page(),b=await page();for(const q of[a,b]){await trace(q);await click(q,'openNet');}
+ const a=await page(),b=await page();for(const q of[a,b]){await trace(q);await click(q,'openNet');await q.eval('document.getElementById("manualConnect").open=true');}
  await click(a,'nHost');const offer=await until(()=>a.eval('document.getElementById("netout").value'),Boolean,15000);await click(b,'nJoin');await b.eval(`document.getElementById('netin').value=${JSON.stringify(offer)}`);await click(b,'nAccept');const answer=await until(()=>b.eval('document.getElementById("netout").value'),Boolean,15000);await a.eval(`document.getElementById('netin').value=${JSON.stringify(answer)}`);await click(a,'nAccept');
  for(const q of[a,b])await until(()=>q.eval('NEON.Game.phase'),x=>x==='fight',15000);
  await tap(a,'KeyW','KeyJ');await move(a,'jumpPunch');await move(b,'jumpPunch');pass('network preserves short jump chord');await frames(a,55);

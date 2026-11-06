@@ -42,7 +42,7 @@ async function compare(a, b, label) {
   for (const p of common) assert.equal(right.find(q => q.epoch === p.epoch && q.frame === p.frame).hash, p.hash, `same state at ${p.frame}`);
   passed(label, { checkpoints: common.length, throughFrame: Math.max(...common.map(p => p.frame)) });
 }
-async function openNet(page) { await click(page, 'openNet'); }
+async function openNet(page) { await click(page, 'openNet'); await page.eval('document.getElementById("manualConnect").open=true'); }
 async function exchange(a, b) {
   await openNet(a); await openNet(b);
   await click(a, 'nHost');

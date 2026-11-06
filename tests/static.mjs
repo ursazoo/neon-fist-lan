@@ -3,6 +3,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { serve } from './server.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -27,7 +28,10 @@ async function walk(directory) {
 await walk(root);
 for (const file of files.filter(p => p.endsWith('.js'))) {
   const code = await readFile(path.join(root, file), 'utf8');
-  assert(!/['"`](?:stun|stuns|turn|turns):/.test(code), `${file} does not call external ICE services`);
+  if (file === 'shared/vendor/peerjs.min.js') {
+    assert.equal(createHash('sha256').update(code).digest('hex'),
+      '7604d8c31bec4f134b0d15c2d80b1d095ea18af005354f439f14291fcd7b4168', 'PeerJS is the unmodified pinned 1.5.5 bundle');
+  } else assert(!/['"`](?:stun|stuns|turn|turns):/.test(code), `${file} does not call external ICE services`);
   const check = spawnSync(process.execPath, ['--check', path.join(root, file)], { encoding: 'utf8' });
   assert.equal(check.status, 0, check.stderr);
 }

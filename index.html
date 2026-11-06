@@ -122,6 +122,33 @@
     #boot p,#netui p{font-size:10px;line-height:1.5;}
   }
   #netstat{font-size:clamp(9px,1.6vh,13px);color:#9fe;min-height:1.4em;}
+  [hidden]{display:none!important;}
+  #netui{gap:18px;background:#09060f;}
+  #netui .character-group{width:min(440px,90vw);}
+  #netui h2{margin:0;font-size:24px;letter-spacing:.02em;}
+  #room-panel{width:min(440px,90vw);}
+  #room-start{display:grid;gap:18px;}
+  #rCreate{width:100%;background:#8b7bff;border-color:#8b7bff;color:#080510;letter-spacing:.03em;font-weight:700;}
+  .room-divider{display:flex;align-items:center;gap:12px;color:#aaa2b9;font-size:12px;}
+  .room-divider:before,.room-divider:after{content:'';height:1px;background:#30263d;flex:1;}
+  #room-join{display:flex;gap:8px;}
+  #rCode,#rNumber{min-width:0;border:1px solid #4b3d70;border-radius:10px;background:#110c1b;color:#fff;font:inherit;user-select:text;-webkit-user-select:text;}
+  #rCode{width:100%;padding:12px 14px;font-size:18px;letter-spacing:.08em;}
+  #rCode::placeholder{font-size:14px;letter-spacing:0;color:#aaa2b9;}
+  #room-join .btn{white-space:nowrap;letter-spacing:.03em;}
+  #room-progress{text-align:center;display:grid;gap:16px;}
+  #room-number{display:grid;gap:14px;}
+  #rNumber{width:100%;border:0;background:#1a1326;text-align:center;font-size:clamp(32px,7vw,46px);letter-spacing:.22em;padding:16px 0 16px .22em;font-weight:700;}
+  #room-progress-label{font-size:14px;color:#ded9e8;}
+  #manualConnect{width:min(540px,90vw);font-size:12px;color:#aaa2b9;}
+  #manualConnect summary{cursor:pointer;text-align:center;padding:6px;}
+  #manualConnect[open] summary{margin-bottom:14px;}
+  #manualConnect .manual-fields{display:grid;gap:12px;}
+  #manualConnect textarea{width:100%;height:80px;}
+  #manualConnect p{font-size:12px;letter-spacing:0;}
+  #netstat{max-width:min(540px,90vw);text-align:center;line-height:1.6;letter-spacing:0;}
+  #room-share-fallback{width:100%;height:60px;}
+  @media(max-width:420px){#netui{padding:20px 5vw;gap:16px;}#netui h2{font-size:21px;}.btn{letter-spacing:.02em;}#rCode{padding:12px 10px;}#room-join .btn{padding:.65em 1em;}}
 </style>
 </head>
 <body>
@@ -170,21 +197,40 @@
     </div>
   </div>
   <div id="netui">
-    <h2 style="margin:0;letter-spacing:.12em">同 Wi-Fi 双人对战</h2>
-    <p id="netexp">① 主机创建连接，复制连接码给客机。<br>
-      ② 客机选择加入，粘贴并接受主机码，复制回传码。<br>
-      ③ 主机粘贴并接受回传码，自动开局。</p>
+    <h2>联机对战</h2>
+    <p id="netexp">同一 Wi-Fi，一人创建，另一人加入。</p>
     <fieldset class="character-group"><legend>本机角色</legend><div class="character-picker" data-picker="local"></div></fieldset>
+    <section id="room-panel" aria-label="房间连接">
+      <div id="room-start">
+        <button class="btn" id="rCreate">创建房间</button>
+        <div class="room-divider">或加入房间</div>
+        <form id="room-join">
+          <input id="rCode" aria-label="六位房间号" placeholder="输入 6 位房间号" inputmode="numeric" maxlength="6" autocomplete="off" spellcheck="false">
+          <button class="btn" id="rJoin" type="submit">加入</button>
+        </form>
+      </div>
+      <div id="room-progress" hidden>
+        <div id="room-progress-label" role="status" aria-live="polite"></div>
+        <div id="room-number" hidden>
+          <input id="rNumber" readonly aria-label="本房间号" tabindex="0">
+          <div class="row"><button class="btn sm" id="rCopy">复制房间号</button><button class="btn sm" id="rInvite">复制邀请链接</button></div>
+        </div>
+        <textarea id="room-share-fallback" readonly aria-label="待复制的邀请内容" hidden></textarea>
+        <button class="btn sm" id="rCancel">取消</button>
+      </div>
+    </section>
+    <details id="manualConnect">
+      <summary>手动连接（备用）</summary>
+      <div class="manual-fields">
+        <p>不使用房间服务。创建方发出连接码，加入方回传应答码。</p>
+        <div class="row"><button class="btn sm" id="nHost">创建连接 · P1</button><button class="btn sm" id="nJoin">加入连接 · P2</button></div>
+        <textarea id="netout" readonly aria-label="本机连接码" placeholder="本机连接码，生成后复制给对方"></textarea>
+        <textarea id="netin" aria-label="对方连接码" placeholder="在这里粘贴对方连接码" spellcheck="false"></textarea>
+        <div class="row"><button class="btn sm" id="nCopy">复制本机码</button><button class="btn sm" id="nAccept">接受粘贴的连接码</button></div>
+      </div>
+    </details>
     <div class="row">
-      <button class="btn sm" id="nHost">创建连接 · P1</button>
-      <button class="btn sm" id="nJoin">加入连接 · P2</button>
-    </div>
-    <textarea id="netout" readonly aria-label="本机连接码" placeholder="本机连接码，生成后复制给对方"></textarea>
-    <textarea id="netin" aria-label="对方连接码" placeholder="在这里粘贴对方连接码" spellcheck="false"></textarea>
-    <div class="row">
-      <button class="btn sm" id="nCopy">复制本机码</button>
-      <button class="btn sm" id="nAccept">接受粘贴的连接码</button>
-      <button class="btn sm" id="nDisconnect">断开连接</button>
+      <button class="btn sm" id="nDisconnect" hidden>断开连接</button>
       <button class="btn sm" id="nClose">返回画面</button>
     </div>
     <div id="netstat" role="status" aria-live="polite"></div>
@@ -214,6 +260,7 @@ import { auditFighterConfig, configFingerprint, hashGameState }
 import { createSession } from './shared/netplay.js';
 import { loadSprites } from './shared/sprites.js';
 import { BTN, InputState, normalizeMask } from './shared/input.js';
+import { createRooms, normalizeRoomCode, roomLink } from './shared/rooms.js';
 import { CHARACTERS } from './shared/characters.js';
 const characterById = Object.fromEntries(CHARACTERS.map(character=>[character.id,character]));
 const selection = { local:'deepseek', opponent:'claude' };
@@ -1572,6 +1619,9 @@ function updatePresentation(){
   if(P2.move) FX.trail(P2);
   Cam.update(P1,P2);
 }
+let Rooms;
+let roomView={state:'idle',code:'',message:''};
+let resumeLocalOnCancel=false;
 const Net=createSession({
   selection:()=>selection.local,
   reset(seed,roster){ Game.cpu=false; startMatch(seed,roster); },
@@ -1587,6 +1637,7 @@ const Net=createSession({
   document.getElementById('netstatus').textContent=state==='idle'?'':
     (role==='host'?'本机 P1':role==='guest'?'本机 P2':'联机')+' · WASD 移动 / JKL 拳踢防 · '+message;
   if(state==='handshake'){
+    resumeLocalOnCancel=false;
     document.getElementById('boot')?.remove();
     document.getElementById('netui').style.display='none';
     document.activeElement?.blur();
@@ -1595,7 +1646,14 @@ const Net=createSession({
     clearKeys(); document.getElementById('netui').style.display='flex';
   }
   if(state==='signaling') clearKeys();
+  renderRoom();
   syncCharacterPickers(); syncToggles();
+});
+Rooms=createRooms(Net,view=>{
+  roomView=view;
+  if(view.state!=='connected') document.getElementById('netstat').textContent=
+    ['idle','error'].includes(view.state)?view.message||'':'';
+  renderRoom();
 });
 
 /* ============================ RENDERING ============================ */
@@ -1808,15 +1866,19 @@ tCpu.onclick=()=>{if(Net.state!=='idle')return;Game.cpu=!Game.cpu;clearKeys();sy
 tMute.onclick=()=>{Audio5.init();Audio5.resume();Audio5.muted=!Audio5.muted;syncToggles();};
 function openNet(){
   clearKeys(); document.getElementById('netui').style.display='flex';
+  renderRoom();
 }
 tNet.onclick=openNet;
 document.getElementById('openNet').onclick=()=>{Audio5.init();Audio5.resume();openNet();};
 document.getElementById('nClose').onclick=()=>{
+  if(resumeLocalOnCancel && !Rooms.active && ['error','disconnected'].includes(Net.state)){
+    Net.practice();resumeLocalOnCancel=false;
+  }
   document.getElementById('netui').style.display='none';
   document.activeElement?.blur(); clearKeys();
 };
 function syncCharacterPickers(){
-  const locked=!['idle','disconnected','error'].includes(Net.state);
+  const locked=!!Rooms?.active || !['idle','disconnected','error'].includes(Net.state);
   document.querySelectorAll('[data-picker]').forEach(picker=>{
     picker.querySelectorAll('button').forEach(button=>{
       button.disabled=locked;
@@ -1845,19 +1907,80 @@ document.querySelectorAll('[data-picker]').forEach(picker=>{
   }
 });
 syncCharacterPickers();
+function renderRoom(){
+  const active=!!Rooms?.active;
+  const connected=['handshake','playing','waiting','ended'].includes(Net.state);
+  const canStart=!active && ['idle','error','disconnected'].includes(Net.state);
+  const manual=document.getElementById('manualConnect');
+  document.getElementById('room-panel').hidden=manual.open;
+  document.getElementById('room-start').hidden=!canStart;
+  document.getElementById('room-progress').hidden=canStart;
+  document.getElementById('room-number').hidden=roomView.state!=='waiting' || !roomView.code;
+  document.getElementById('rNumber').value=roomView.code||'';
+  document.getElementById('room-progress-label').textContent=connected?'已连接':roomView.message||'已连接';
+  document.getElementById('rCancel').hidden=!active || connected;
+  document.getElementById('rCreate').disabled=!canStart;
+  document.getElementById('rJoin').disabled=!canStart;
+  document.getElementById('rCode').disabled=!canStart;
+  manual.hidden=active;
+  document.getElementById('nDisconnect').hidden=active?!connected:Net.state==='idle';
+  syncCharacterPickers();
+}
+document.getElementById('manualConnect').addEventListener('toggle',renderRoom);
+document.getElementById('rCreate').onclick=async()=>{
+  resumeLocalOnCancel ||= Net.state==='idle';
+  Audio5.init();Audio5.resume();clearKeys();
+  document.getElementById('manualConnect').open=false;
+  document.getElementById('room-share-fallback').hidden=true;
+  await Rooms.create();
+};
+document.getElementById('room-join').onsubmit=async event=>{
+  resumeLocalOnCancel ||= Net.state==='idle';
+  event.preventDefault();Audio5.init();Audio5.resume();clearKeys();
+  document.getElementById('manualConnect').open=false;
+  await Rooms.join(document.getElementById('rCode').value);
+};
+document.getElementById('rCode').addEventListener('paste',event=>{
+  const code=normalizeRoomCode(event.clipboardData.getData('text'));
+  if(code){event.preventDefault();event.target.value=code;}
+});
+document.getElementById('rCancel').onclick=()=>{
+  Rooms.close();if(resumeLocalOnCancel) Net.practice();resumeLocalOnCancel=false;
+  roomView={state:'idle',code:'',message:''};
+  document.getElementById('netstat').textContent='已取消，可重新创建或加入房间';renderRoom();
+};
+async function copyRoom(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    document.getElementById('netstat').textContent='已复制，发给对方即可';
+  }catch{
+    const field=document.getElementById('room-share-fallback');
+    field.hidden=false;field.value=text;field.focus();field.select();
+    document.getElementById('netstat').textContent='请按 Ctrl/Cmd+C 复制已选中的内容';
+  }
+}
+document.getElementById('rCopy').onclick=()=>copyRoom(roomView.code);
+document.getElementById('rInvite').onclick=()=>copyRoom(roomLink(roomView.code,location.href));
 const outEl=document.getElementById('netout'), inEl=document.getElementById('netin');
 document.getElementById('nHost').onclick=async()=>{
+  resumeLocalOnCancel ||= Net.state==='idle';
+  Rooms.close();roomView={state:'idle',code:'',message:''};
   Audio5.init();Audio5.resume();outEl.value='';
   const code=await Net.host(); if(code) outEl.value=code;
 };
 document.getElementById('nJoin').onclick=()=>{
+  resumeLocalOnCancel ||= Net.state==='idle';
+  Rooms.close();roomView={state:'idle',code:'',message:''};
   Audio5.init();Audio5.resume();outEl.value='';Net.join();
 };
 document.getElementById('nAccept').onclick=async()=>{
   Audio5.init();Audio5.resume();
   const code=await Net.accept(inEl.value); if(code) outEl.value=code;
 };
-document.getElementById('nDisconnect').onclick=()=>Net.close();
+document.getElementById('nDisconnect').onclick=()=>{
+  const resume=resumeLocalOnCancel;
+  Rooms.close();Net.close();if(resume) Net.practice();resumeLocalOnCancel=false;
+};
 document.getElementById('nCopy').onclick=async()=>{
   if(!outEl.value) return;
   outEl.focus(); outEl.select(); outEl.setSelectionRange(0,outEl.value.length);
@@ -1917,7 +2040,7 @@ async function boot(){
     CONFIG_FINGERPRINT = configFingerprint({fighter:loader.assets.fighter,
       rules:loader.assets.rules,stage:loader.assets.stage});
     const sources=await Promise.all(['index.html','shared/netplay.js','shared/lockstep.js',
-      'shared/input.js','shared/configLoader.js','shared/integrity.js','shared/sprites.js','shared/characters.js',
+      'shared/input.js','shared/rooms.js','shared/vendor/peerjs.min.js','shared/configLoader.js','shared/integrity.js','shared/sprites.js','shared/characters.js',
       'assets/fighters/ai.json',...CHARACTERS.map(character=>character.image)].map(async path=>{
       const response=await fetch(new URL(path,location.href),{cache:'no-store'});
       if(!response.ok) throw new Error('无法读取构建指纹 '+path);
@@ -1949,7 +2072,7 @@ async function boot(){
     Cam.reset(); cachePadRects(); UI.sync(); syncToggles();
 
     window.NEON = {
-      Game, P1, P2, MOVES, PHYS, MOTIONS, SCALING, HURT, RULES, STAGE,
+      Game, P1, P2, MOVES, PHYS, MOTIONS, SCALING, HURT, RULES, STAGE, Rooms,
       FX, Cam, Net, DEBUG, Projectiles, snapshot,
       sprites:Object.freeze({frame:side=>{
         if(side!=='p1' && side!=='p2') throw new RangeError('Unknown fighter side '+side);
@@ -1967,6 +2090,8 @@ async function boot(){
     setP(1,'ready');
     document.getElementById('loading').classList.add('done');
     document.getElementById('boot').classList.add('ready');
+    const invitedRoom=normalizeRoomCode(location.href);
+    if(invitedRoom){document.getElementById('rCode').value=invitedRoom;openNet();}
     requestAnimationFrame(frame);
   }catch(err){
     document.getElementById('loading').innerHTML =
