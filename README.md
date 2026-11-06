@@ -72,3 +72,5 @@ npm run test:browser
 浏览器测试将截图与结果写入 `artifacts/`。单机双窗口测试不能替代两台实体电脑在目标 Wi-Fi 下的验收。
 
 逐帧动作的浏览器检查可复用已启动的 Chrome CDP 与本地预览，运行 `CDP_PORT=19334 SITE_URL=http://127.0.0.1:4174/ node tests/sprites.browser.mjs`。该检查使用真实键盘事件验证完整帧序列，并将动作记录保存到 `artifacts/sprites/`。
+
+裁切检查运行 `CDP_PORT=19334 node tests/sprite-render.browser.mjs`，验证实际绘制的人物轮廓完整且没有邻帧像素。帧表按实际透明区域生成，使用已安装 Pillow 的 Python 运行 `python3 tools/rebuild-sprite-frames.py --check` 校对，或去掉 `--check` 重建。`python3 tests/sprite-crops.test.py` 检查全部 159 个帧别名、原点、素材字节和原始错误案例。

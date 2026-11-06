@@ -38,6 +38,7 @@ export async function tab(port, url, init) {
   const client = await connect(target.webSocketDebuggerUrl);
   await client.send('Runtime.enable');
   await client.send('Network.enable');
+  await client.send('Network.setCacheDisabled', { cacheDisabled: true });
   await client.send('Network.setBypassServiceWorker', { bypass: true });
   await client.send('Emulation.setFocusEmulationEnabled', { enabled: true });
   await client.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });

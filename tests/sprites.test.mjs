@@ -221,3 +221,46 @@ test('repeated sampling and draws freeze unchanged fields, preserve fighters, an
   }
   assert.equal(sample({ state:'attack',move:moves.kick,moveFrame:4,stateFrame:4 }).frameName,'kick1');
 });
+
+test('edge clips use source pixels through the same origin and scale as drawImage', async t => {
+  mockLoader(t);
+  const sprites = await loadSprites('https://example.test/');
+  const calls = [], stack = [];
+  const ctx = {
+    filter:'brightness(2.4)', clipped:false,
+    save() { stack.push([this.filter,this.clipped]); },
+    restore() { [this.filter,this.clipped] = stack.pop(); calls.push(['restore']); },
+    beginPath() { calls.push(['begin']); },
+    moveTo(...p) { calls.push(['move',...p]); },
+    lineTo(...p) { calls.push(['line',...p]); },
+    closePath() { calls.push(['close']); },
+    clip() { this.clipped = true; calls.push(['clip']); },
+    drawImage(...args) { calls.push(['draw',this.clipped,...args]); },
+  };
+  const frame = sprites.draw(ctx,fighter({state:'win'}),'deepseek');
+  const source = registry.deepseek.frames.victory0;
+  assert.equal(frame.clip,'win');
+  assert.deepEqual(frame.sourceClip,source.clip);
+  assert.throws(() => { frame.sourceClip[0][0] = 0; },TypeError);
+  const [x,y,w,h] = frame.rect, [ox,oy] = frame.origin, scale = frame.scale;
+  assert.deepEqual(calls.slice(1,1+source.clip.length),source.clip.map(([px,py],i) =>
+    [i?'line':'move',(px-x-ox)*scale,(py-y-oy)*scale]));
+  assert.deepEqual(calls.at(-2),['draw',true,sprites.image,x,y,w,h,-ox*scale,-oy*scale,w*scale,h*scale]);
+  assert.deepEqual(calls.slice(-4).map(c=>c[0]),['close','clip','draw','restore']);
+  assert.equal(ctx.clipped,false);
+  assert.equal(ctx.filter,'brightness(2.4)');
+  calls.length = 0;
+  sprites.draw(ctx,fighter());
+  assert.equal(calls[0][0],'draw');
+  assert.equal(calls[0][1],false);
+});
+
+test('malformed source clip polygons reject loading', async t => {
+  mockLoader(t);
+  for (const clip of [null,[],[[0,0],[1,1]],[[0,0],[1,1],[2,2]],[[849,1365],[972,1365],[972.5,1534]]]) {
+    const bad = structuredClone(registry);
+    bad.deepseek.frames.victory0.clip = clip;
+    t.mock.method(globalThis,'fetch',async()=>({ok:true,json:async()=>bad}));
+    await assert.rejects(loadSprites('https://example.test/'),/Invalid fighter sprite clip victory0/);
+  }
+});

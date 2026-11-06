@@ -73,7 +73,8 @@ export function sampleSprite(fighter, meta) {
   const frame = meta.frames[frameName] || meta.frames.idle0;
   if (!meta.frames[frameName]) { clip = 'idle'; frameName = 'idle0'; phase = 'hold'; }
   return Object.freeze({ clip, frameName, phase,
-    rect:Object.freeze([...frame.rect]), origin:Object.freeze([...frame.origin]), scale:meta.scale });
+    rect:Object.freeze([...frame.rect]), origin:Object.freeze([...frame.origin]), scale:meta.scale,
+    ...(frame.clip ? { sourceClip:Object.freeze(frame.clip.map(point => Object.freeze([...point]))) } : {}) });
 }
 
 function freeze(value) {
@@ -98,6 +99,11 @@ function validate(meta, image) {
         r[0] + r[2] > image.naturalWidth || r[1] + r[3] > image.naturalHeight ||
         !Array.isArray(o) || o.length !== 2 || !o.every(Number.isFinite)) {
       throw new Error('Invalid fighter sprite frame ' + name);
+    }
+    if (frame.clip !== undefined && (!Array.isArray(frame.clip) || frame.clip.length < 3 ||
+        !frame.clip.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isInteger) &&
+          p[0] >= r[0] && p[0] <= r[0]+r[2] && p[1] >= r[1] && p[1] <= r[1]+r[3]))) {
+      throw new Error('Invalid fighter sprite clip ' + name);
     }
   }
 }
@@ -132,6 +138,14 @@ export async function loadSprites(baseURL = new URL('../', import.meta.url)) {
       try {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
+        if (sampled.sourceClip) {
+          ctx.beginPath();
+          sampled.sourceClip.forEach(([px,py], i) => {
+            ctx[i ? 'lineTo' : 'moveTo']((px-x-ox)*scale, (py-y-oy)*scale);
+          });
+          ctx.closePath();
+          ctx.clip();
+        }
         ctx.drawImage(characters[character].image, x,y,w,h, -ox*scale,-oy*scale,w*scale,h*scale);
       } finally { ctx.restore(); }
       return sampled;
