@@ -1,3 +1,5 @@
+import { MAX_INPUT_MASK } from './input.js';
+
 export const INPUT_DELAY = 2;
 const HISTORY = 120;
 const LEAD = 64;
@@ -15,7 +17,7 @@ export class Lockstep {
 
   put(player, frame, mask) {
     if (!Number.isSafeInteger(frame) || frame < 0 || frame > this.frame + LEAD ||
-        !Number.isInteger(mask) || mask < 0 || mask > 127) {
+        !Number.isInteger(mask) || mask < 0 || mask > MAX_INPUT_MASK) {
       throw new Error('输入超出允许范围');
     }
     if (frame < this.frame - HISTORY) throw new Error('输入已过期');
@@ -29,9 +31,10 @@ export class Lockstep {
     return true;
   }
 
-  capture(mask) {
+  capture(sample) {
     const frame = this.frame + INPUT_DELAY;
     if (this.inputs[this.player].has(frame)) return null;
+    const mask = typeof sample === 'function' ? sample() : sample;
     this.put(this.player, frame, mask);
     return { frame, mask };
   }

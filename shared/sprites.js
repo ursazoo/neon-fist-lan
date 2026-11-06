@@ -13,6 +13,8 @@ const CLIPS = {
 const MOVES = {
   punch: { startup:['punch0'], active:['punch1','punch3'], recovery:['punch2','punch0','idle0'] },
   kick: { startup:['kick0','kick1'], active:['kick2','kick3'], recovery:['kick1','kick0','idle0'] },
+  lowPunch: { startup:['low0'], active:['low1'], recovery:['low0'] },
+  jumpPunch: { startup:['air0','air1'], active:['punch1','punch3'], recovery:['air1','jump2'] },
   lowKick: { startup:['low0','low1','low2'], active:['low3'], recovery:['low2','low1','low0'] },
   jumpKick: { startup:['air0','air1','air2'], active:['air3'], recovery:['air2','air1','jump2'] },
   fireball: { startup:['fire0','fire2'], active:['fire1','fire3'], recovery:['fire2','fire0','idle0'] },

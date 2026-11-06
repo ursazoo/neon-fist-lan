@@ -198,8 +198,8 @@
     <h1>NEON FIST</h1>
     <fieldset class="character-group"><legend>本机角色</legend><div class="character-picker" data-picker="local"></div></fieldset>
     <fieldset class="character-group"><legend>CPU 对手</legend><div class="character-picker" data-picker="opponent"></div></fieldset>
-    <p>MOVE A/D · JUMP W · CROUCH S · PUNCH J · KICK K · BLOCK L<br>
-       <b>FIREBALL</b> ↓ ↘ → + P &nbsp;·&nbsp; <b>UPPERCUT</b> → ↓ ↘ + P &nbsp;·&nbsp; <b>SPIN KICK</b> ↓ ↙ ← + K<br>
+    <p>MOVE A/D · JUMP W/SPACE · CROUCH S · PUNCH J · KICK K · BLOCK L<br>
+       <b>FIREBALL</b> U / ↓ ↘ → + J &nbsp;·&nbsp; <b>UPPERCUT</b> I / → ↓ ↘ + J &nbsp;·&nbsp; <b>SPIN KICK</b> O / ↓ ↙ ← + K<br>
        联机双方均使用 WASD + JKL。主机控制 P1，客机控制 P2。</p>
     <div class="row"><button class="btn" id="start">本地练习</button>
     <button class="btn" id="openNet">同 Wi-Fi 联机</button></div>
@@ -213,6 +213,7 @@ import { auditFighterConfig, configFingerprint, hashGameState }
   from './shared/integrity.js';
 import { createSession } from './shared/netplay.js';
 import { loadSprites } from './shared/sprites.js';
+import { BTN, InputState, normalizeMask } from './shared/input.js';
 import { CHARACTERS } from './shared/characters.js';
 const characterById = Object.fromEntries(CHARACTERS.map(character=>[character.id,character]));
 const selection = { local:'deepseek', opponent:'claude' };
@@ -332,6 +333,8 @@ const ANIM = {
   fall:       {cells:[8],         hold:99, loop:true },
   punch:      {cells:[9,10,11],   hold:0,  loop:false},
   kick:       {cells:[12,13,14],  hold:0,  loop:false},
+  lowPunch:   {cells:[6,15,6],    hold:0,  loop:false},
+  jumpPunch:  {cells:[7,17,10,11,17,8], hold:0, loop:false},
   crouchKick: {cells:[15,16,15],  hold:0,  loop:false},
   jumpKick:   {cells:[17],        hold:99, loop:false},
   block:      {cells:[18],        hold:99, loop:true },
@@ -351,6 +354,8 @@ const ANIM = {
 const FRAME_MAPS = {
   punch:    {s:[0],a:[1],r:[2]},
   kick:     {s:[0],a:[1],r:[2]},
+  lowPunch: {s:[0],a:[1],r:[2]},
+  jumpPunch:{s:[0,1],a:[2,3],r:[4,5]},
   lowKick:  {s:[0],a:[1],r:[2]},
   jumpKick: {s:[0],a:[0],r:[0]},
   fireball: {s:[0],a:[1],r:[2]},
@@ -515,18 +520,21 @@ const Audio5 = (()=>{
    event fires (pointerdown, not click; passive:false; no layout reads
    in the handler — button rects are cached and refreshed on resize).
    The sim then consumes the freshest mask at step time.               --- */
-const BTN = { LEFT:1, RIGHT:2, UP:4, DOWN:8, PUNCH:16, KICK:32, BLOCK:64 };
 const BIT_OF = { left:BTN.LEFT, right:BTN.RIGHT, up:BTN.UP, crouch:BTN.DOWN,
-                 punch:BTN.PUNCH, kick:BTN.KICK, block:BTN.BLOCK };
+                 punch:BTN.PUNCH, kick:BTN.KICK, block:BTN.BLOCK,
+                 fireball:BTN.FIREBALL, uppercut:BTN.UPPERCUT, spinKick:BTN.SPIN };
 
 const KEYMAP = {
   0:{ KeyA:BTN.LEFT, KeyD:BTN.RIGHT, KeyW:BTN.UP, KeyS:BTN.DOWN,
-      KeyJ:BTN.PUNCH, KeyK:BTN.KICK, KeyL:BTN.BLOCK },
+      KeyJ:BTN.PUNCH, KeyK:BTN.KICK, KeyL:BTN.BLOCK, Space:BTN.UP,
+      KeyU:BTN.FIREBALL, KeyI:BTN.UPPERCUT, KeyO:BTN.SPIN },
   1:{ ArrowLeft:BTN.LEFT, ArrowRight:BTN.RIGHT, ArrowUp:BTN.UP, ArrowDown:BTN.DOWN,
       Digit1:BTN.PUNCH, Numpad1:BTN.PUNCH, Digit2:BTN.KICK, Numpad2:BTN.KICK,
-      Digit3:BTN.BLOCK, Numpad3:BTN.BLOCK }
+      Digit3:BTN.BLOCK, Numpad3:BTN.BLOCK,
+      Digit4:BTN.FIREBALL, Numpad4:BTN.FIREBALL, Digit5:BTN.UPPERCUT, Numpad5:BTN.UPPERCUT,
+      Digit6:BTN.SPIN, Numpad6:BTN.SPIN }
 };
-const LiveInput = [0,0];   // raw masks straight off the hardware
+const LiveInput = [new InputState(), new InputState()];
 
 function inputBlocked(target){
   return document.getElementById('netui').style.display === 'flex' ||
@@ -534,19 +542,21 @@ function inputBlocked(target){
     !!target?.closest?.('textarea,input,select,button,[contenteditable]:not([contenteditable="false"])');
 }
 function clearKeys(){
-  LiveInput[0]=LiveInput[1]=0;
   touchOwner.clear(); recomputeTouchMask();
+  for(const input of LiveInput) input.cancel();
 }
 window.addEventListener('keydown', e=>{
   if(inputBlocked(e.target) || e.repeat) return;
   if(Object.values(KEYMAP).some(map=>map[e.code]) || e.code==='Space') e.preventDefault();
   if(e.code==='KeyH'){ DEBUG.boxes=!DEBUG.boxes; syncToggles(); }
   if(e.code==='KeyG'){ DEBUG.diag=!DEBUG.diag; syncToggles(); }
-  if(e.code==='KeyP' && Net.state==='idle'){ Game.paused=!Game.paused; }
-  for(const p of [0,1]){ const b=KEYMAP[p][e.code]; if(b) LiveInput[p]|=b; }
+  if(e.code==='KeyP' && Net.state==='idle'){ Game.paused=!Game.paused; clearKeys();
+    return; }
+  if(Game.paused) return;
+  for(const p of [0,1]){ const b=KEYMAP[p][e.code]; if(b) LiveInput[p].set(e.code,b); }
 },{passive:false});
 window.addEventListener('keyup', e=>{
-  for(const p of [0,1]){ const b=KEYMAP[p][e.code]; if(b) LiveInput[p]&=~b; }
+  for(const p of [0,1]){ const b=KEYMAP[p][e.code]; if(b) LiveInput[p].remove(e.code); }
 });
 window.addEventListener('blur', clearKeys);
 document.addEventListener('visibilitychange', ()=>{
@@ -573,18 +583,19 @@ function hitPad(x,y){
   return null;
 }
 function recomputeTouchMask(){
-  let mask=0;
   const held=new Set();
-  for(const r of touchOwner.values()){ mask|=r.bit; held.add(r.el); }
+  for(const [token,r] of touchOwner){ LiveInput[0].set('touch:'+token,r.bit); held.add(r.el); }
+  for(const source of LiveInput[0].sources.keys()){
+    if(typeof source==='string' && source.startsWith('touch:') &&
+       ![...touchOwner.keys()].some(token=>'touch:'+token===source)) LiveInput[0].remove(source);
+  }
   for(const r of padRects){
     const on=held.has(r.el);
     if(r.el._on!==on){ r.el._on=on; r.el.classList.toggle('held',on); }  // avoid layout thrash
   }
-  TouchMask = mask;
 }
-let TouchMask = 0;
 function onTouchStart(e){
-  if(inputBlocked(e.target)) return;
+  if(inputBlocked(e.target) || Game.paused) return;
   Audio5.resume();
   for(const t of e.changedTouches){
     const r=hitPad(t.clientX,t.clientY);
@@ -612,88 +623,110 @@ touchRoot.addEventListener('touchend',  onTouchEnd);
 touchRoot.addEventListener('touchcancel',onTouchEnd);
 padKeys.forEach(el=>{
   el.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='touch') return;
+    if(e.pointerType==='touch' || inputBlocked(e.target) || Game.paused) return;
     e.preventDefault();
     const r=padRects.find(r=>r.el===el); if(r) touchOwner.set('m'+e.pointerId,r);
     recomputeTouchMask();
   });
 });
-window.addEventListener('pointerup',e=>{ touchOwner.delete('m'+e.pointerId); recomputeTouchMask(); });
+function onPointerEnd(e){ touchOwner.delete('m'+e.pointerId); recomputeTouchMask(); }
+window.addEventListener('pointerup',onPointerEnd);
+window.addEventListener('pointercancel',onPointerEnd);
 
 /* ------- 7.1 input buffer: ring of masks + edge-triggered queue ------ */
-let BUFFER_LEN = 10;     // overwritten by rules.json
+let BUFFER_LEN = 10;
 class InputBuffer{
   constructor(){
-    this.hist   = new Int32Array(64);   // raw masks, ring
-    this.dirs   = new Int8Array(64);    // numpad direction per frame
-    this.head   = 0;
-    this.pressAge = {punch:99, kick:99, up:99, block:99};
-    this.consumed = {punch:false, kick:false, up:false};
-    this.prev = 0;
+    this.hist = new Int32Array(64);
+    this.dirs = new Int8Array(64);
+    this.pressAge = {punch:99,kick:99,up:99,block:99,fireball:99,uppercut:99,spinKick:99};
+    this.consumed = {};
+    this.reset();
   }
-  reset(){ this.hist.fill(0); this.dirs.fill(5); this.head=0; this.prev=0;
-    for(const k in this.pressAge) this.pressAge[k]=99;
-    for(const k in this.consumed) this.consumed[k]=false; }
-  /* called once per simulated frame with the authoritative mask */
-  push(mask, face){
+  reset(){
+    this.hist.fill(0); this.dirs.fill(5);
+    this.head=0; this.prev=0; this.face=0; this.clock=0; this.frame=0;
+    this.clearPending();
+  }
+  clearPending(resetHeld=false){
+    for(const k in this.pressAge){ this.pressAge[k]=99; this.consumed[k]=true; }
+    this.completed=[];
+    this.dirs.fill(5);
+    if(resetHeld){ this.prev=0; this.hist.fill(0); }
+  }
+  push(rawMask, face, frozen=false){
+    if(rawMask & BTN.CLEAR) this.clearPending(true);
+    const mask=normalizeMask(rawMask & ~BTN.CLEAR);
+    this.frame++;
+    if(!frozen){
+      this.clock++;
+      for(const k in this.pressAge) if(this.pressAge[k]<99) this.pressAge[k]++;
+      for(const command of this.completed) command.age++;
+      this.completed=this.completed.filter(command=>command.age<=BUFFER_LEN);
+    }
+    if(this.face && this.face!==face) this.dirs.fill(5);
+    this.face=face;
     this.head=(this.head+1)&63;
     this.hist[this.head]=mask;
-    // numpad direction relative to facing
-    const fwd = face>0 ? BTN.RIGHT : BTN.LEFT;
-    const bak = face>0 ? BTN.LEFT  : BTN.RIGHT;
-    let h = (mask&fwd)?1:((mask&bak)?-1:0);
-    let v = (mask&BTN.DOWN)?-1:((mask&BTN.UP)?1:0);
-    this.dirs[this.head] = (v===0?5:(v>0?8:2)) + (h===0?0:(h>0?1:-1))*(v===0?1:1)*(v>0?1:1);
-    // explicit numpad mapping
-    let d=5;
-    if(v<0) d = h<0?1:(h>0?3:2);
-    else if(v>0) d = h<0?7:(h>0?9:8);
-    else d = h<0?4:(h>0?6:5);
-    this.dirs[this.head]=d;
-
-    const rising = mask & ~this.prev;
-    for(const k of ['punch','kick','up','block']){
-      const bit=BIT_OF[k==='up'?'up':k];
-      if(rising & bit){ this.pressAge[k]=0; this.consumed[k]=false; }
-      else if(this.pressAge[k]<99) this.pressAge[k]++;
+    const h=((mask&BTN.RIGHT)?1:0)-((mask&BTN.LEFT)?1:0);
+    const v=((mask&BTN.UP)?1:0)-((mask&BTN.DOWN)?1:0);
+    const relative=h*face;
+    this.dirs[this.head]=(v<0?2:v>0?8:5)+relative;
+    const rising=mask & ~this.prev;
+    for(const k in this.pressAge){
+      if(rising & BIT_OF[k]){ this.pressAge[k]=0; this.consumed[k]=false; }
+    }
+    // Bind the completed command to this edge, never reinterpret an old punch.
+    for(const btn of ['punch','kick']){
+      if(!(rising & BIT_OF[btn])) continue;
+      let best=null;
+      for(const motion of MOTIONS){
+        if(motion.btn===btn && this.matchMotion(motion.seq,motion.window) &&
+           (!best || motion.priority>best.priority)) best=motion;
+      }
+      if(best){ this.latch(best,btn); this.consume(btn); }
+    }
+    for(const motion of MOTIONS){
+      if(rising & BIT_OF[motion.move]){
+        this.latch(motion,motion.move); this.consume(motion.move);
+      }
     }
     this.prev=mask;
   }
+  latch(motion,btn){
+    this.completed=this.completed.filter(command=>command.btn!==btn);
+    this.completed.push({move:motion.move,btn,trigger:this.frame,age:0,priority:motion.priority});
+  }
   cur(){ return this.hist[this.head]; }
-  held(bit){ return (this.hist[this.head]&bit)!==0; }
-  /* a buffered press is "available" if pressed within BUFFER_LEN frames
-     and not yet spent by an action */
-  avail(k){ return !this.consumed[k] && this.pressAge[k] <= BUFFER_LEN; }
+  held(bit){ return (this.cur()&bit)!==0; }
+  avail(k){ return !this.consumed[k] && this.pressAge[k]<=BUFFER_LEN; }
   consume(k){ this.consumed[k]=true; }
+  consumeAttacks(){
+    for(const k of ['punch','kick','fireball','uppercut','spinKick']) this.consume(k);
+    this.completed=[];
+    this.dirs.fill(5);
+  }
   dirAgo(n){ return this.dirs[(this.head-n+64)&63]; }
-
-  /* ---- 7.2 motion parser -------------------------------------------
-     Walk backwards through the direction ring matching the motion's
-     sequence in reverse. Tolerates repeated frames and up to 4 frames
-     of "noise" between steps, capped by the motion's total window.   */
   matchMotion(seq, window){
-    let step = seq.length-1;
-    let gap = 0;
-    for(let n=0; n<window && n<62; n++){
-      const d = this.dirAgo(n);
-      if(d === seq[step]){
+    let step=seq.length-1, gap=0;
+    for(let n=0;n<window && n<62;n++){
+      const d=this.dirAgo(n);
+      if(d===seq[step]){
         step--; gap=0;
         if(step<0) return true;
-      } else if(n>0) {
-        // allow the previous matched direction to repeat
-        if(d === seq[step+1]) continue;
-        if(++gap > 4) return false;
+      }else if(n>0){
+        if(d===seq[step+1]) continue;
+        if(++gap>4) return false;
       }
     }
     return false;
   }
-  detectSpecial(){
+  detectSpecial(allowed=null){
     let best=null;
-    for(const m of MOTIONS){
-      if(!this.avail(m.btn)) continue;
-      if(this.matchMotion(m.seq, m.window)){
-        if(!best || m.priority>best.priority) best=m;
-      }
+    for(const command of this.completed){
+      if(command.age>BUFFER_LEN || allowed && !allowed.includes(command.move)) continue;
+      if(!best || command.priority>best.priority ||
+         command.priority===best.priority && command.trigger>best.trigger) best=command;
     }
     return best;
   }
@@ -735,6 +768,7 @@ class Fighter{
     this.move=null; this.moveFrame=0; this.hasHit=false;
     this.hitTargets=0; this.multiTick=0;
     this.canCancel=false; this.cancelUsed=false;
+    this.guard=null;
     this.stun=0; this.hp=100; this.meter=0;
     this.combo=0; this.comboTimer=0; this.comboDamage=0;
     this.gravMul=1;
@@ -750,12 +784,15 @@ class Fighter{
     o.move=this.move?this.move.key:null; o.moveFrame=this.moveFrame;
     o.hasHit=this.hasHit; o.hitTargets=this.hitTargets; o.multiTick=this.multiTick;
     o.canCancel=this.canCancel; o.cancelUsed=this.cancelUsed;
+    o.guard=this.guard;
     o.stun=this.stun; o.hp=this.hp; o.meter=this.meter;
     o.combo=this.combo; o.comboTimer=this.comboTimer; o.comboDamage=this.comboDamage;
     o.gravMul=this.gravMul; o.anim=this.anim; o.animFrame=this.animFrame;
     o.animTick=this.animTick; o.onGround=this.onGround; o.invuln=this.invuln;
     o.flash=this.flash; o.rounds=this.rounds; o.aiTimer=this.aiTimer; o.aiMode=this.aiMode;
     o.bh=this.buf.head; o.bprev=this.buf.prev;
+    o.bface=this.buf.face; o.bclock=this.buf.clock; o.bframe=this.buf.frame;
+    o.commands=this.buf.completed.map(command=>({...command}));
     if(!o.hist) { o.hist=new Int32Array(64); o.dirs=new Int8Array(64); }
     o.hist.set(this.buf.hist); o.dirs.set(this.buf.dirs);
     o.pa=o.pa||{}; Object.assign(o.pa,this.buf.pressAge);
@@ -763,7 +800,7 @@ class Fighter{
     return o;
   }
   hurtboxes(){
-    const key = STATES[this.state].hurt;
+    const key = this.state==='blockstun' && this.guard==='low' ? 'crouch' : STATES[this.state].hurt;
     const out=[];
     for(const b of HURT[key]){
       out.push({x:this.x + (this.face>0? b.x : -b.x-b.w), y:this.y + b.y, w:b.w, h:b.h});
@@ -771,7 +808,7 @@ class Fighter{
     return out;
   }
   hitbox(){
-    if(!this.move || !this.move.box) return null;
+    if(!['attack','crouchAtk','airAtk','special'].includes(this.state) || !this.move || !this.move.box) return null;
     const m=this.move, f=this.moveFrame;
     if(f < m.startup || f >= m.startup+m.active) return null;
     if(m.multiHit){ if(this.multiTick!==0) return null; }
@@ -781,7 +818,15 @@ class Fighter{
   }
   get pushbox(){ return {x:this.x-26,y:this.y-150,w:52,h:150}; }
 
+  interruptMove(){
+    this.move=null; this.moveFrame=0; this.hasHit=false; this.hitTargets=0;
+    this.multiTick=0; this.canCancel=false; this.cancelUsed=false; this.invuln=0;
+  }
+
   setState(s,anim){
+    if(['hitstun','airstun','blockstun','ko','win','frozen'].includes(s)) this.interruptMove();
+    if(['ko','win','frozen'].includes(s)) this.buf.clearPending();
+    if(s!=='blockstun') this.guard=s==='block'?'high':s==='crouchBlock'?'low':null;
     if(this.state===s && !anim) return;
     this.state=s; this.stateFrame=0;
     const a = anim || STATES[s].anim;
@@ -794,11 +839,9 @@ class Fighter{
     const m=MOVES[key]; if(!m) return false;
     if(m.special && this.meter < 0) return false;
     this.move=m; this.moveFrame=0; this.hasHit=false; this.hitTargets=0;
-    this.multiTick=0; this.canCancel=false; this.cancelUsed=!!isCancel;
+    this.multiTick=0; this.canCancel=false; this.cancelUsed=false;
     if(m.invuln) this.invuln=m.invuln[1];
-    const st = m.special ? 'special'
-             : (!this.onGround ? 'airAtk'
-             : (key==='lowKick' ? 'crouchAtk' : 'attack'));
+    const st = m.special ? 'special' : m.air ? 'airAtk' : m.crouch ? 'crouchAtk' : 'attack';
     this.setState(st, m.anim);
     if(m.riseVel){ this.vy=m.riseVel; this.onGround=false; }
     if(m.driveVel){ this.vx=this.face*m.driveVel; }
@@ -811,14 +854,16 @@ class Fighter{
 
   /* ---- 3.2 / 7.4 receiving a hit ---- */
   takeHit(atk, attacker){
+    if(['ko','win','frozen'].includes(this.state)) return 'ignored';
     if(this.invuln>0) return 'invuln';
-    const blockedHigh = (this.state==='block');
-    const blockedLow  = (this.state==='crouchBlock');
+    const blockedHigh = this.state==='block' || this.state==='blockstun' && this.guard==='high';
+    const blockedLow = this.state==='crouchBlock' || this.state==='blockstun' && this.guard==='low';
     let blocked=false;
     if(blockedHigh && atk.height!=='low') blocked=true;
     if(blockedLow  && atk.height!=='overhead') blocked=true;
 
     const dir = attacker.face;
+    this.interruptMove();
     if(blocked){
       this.hp = Math.max(0, this.hp - atk.chip);
       this.stun = atk.blockstun;
@@ -833,6 +878,8 @@ class Fighter{
       if(atk.cancelOnBlock) attacker.canCancel=true;   // 7.3 block-cancel
       return 'block';
     }
+
+    this.buf.clearPending();
 
     /* --- 7.4 progressive scaling --- */
     const n = attacker.combo;
@@ -869,16 +916,23 @@ class Fighter{
     }
     if(this.onGround && this.state!=='airstun') this.gravMul=1;
 
-    this.buf.push(mask, this.face);
+    this.buf.push(mask, this.face, false);
 
     if(this.state==='ko' || this.state==='win' || this.state==='frozen'){
+      this.buf.clearPending();
       this.applyPhysics(opp); this.advanceAnim(); return;
     }
     if(this.state==='hitstun' || this.state==='airstun' || this.state==='blockstun'){
-      if(--this.stun<=0 && (this.onGround || this.state==='blockstun')){
-        this.setState(this.onGround?'idle':'jump');
+      if(this.state==='blockstun'){
+        this.guard=this.buf.held(BTN.BLOCK)?(this.buf.held(BTN.DOWN)?'low':'high'):null;
+        if(this.guard) this.setAnim(this.guard==='low'?'crouchBlock':'block');
       }
-      this.applyPhysics(opp); this.advanceAnim(); return;
+      if(--this.stun<=0 && (this.onGround || this.state==='blockstun')){
+        this.stun=0;
+        this.setState(this.onGround?'idle':'jump');
+      }else{
+        this.applyPhysics(opp); this.advanceAnim(); return;
+      }
     }
 
     if(this.move){
@@ -892,22 +946,22 @@ class Fighter{
          its ACTIVE or RECOVERY frames into a listed follow-up.        */
       if(this.canCancel && !this.cancelUsed && m.cancelInto.length &&
          this.moveFrame >= m.startup){
-        const sp = this.buf.detectSpecial();
-        if(sp && m.cancelInto.includes(sp.move)){
-          this.buf.consume(sp.btn);
+        const sp = this.onGround ? this.buf.detectSpecial(m.cancelInto) : null;
+        if(sp){
+          this.buf.consumeAttacks();
           this.startMove(sp.move,true);
           this.applyPhysics(opp); this.advanceAnim(); return;
         }
         // normal-into-normal chain (punch → kick)
         if(m.cancelInto.includes('kick') && this.buf.avail('kick')){
-          this.buf.consume('kick');
+          this.buf.consumeAttacks();
           this.startMove('kick',true);
           this.applyPhysics(opp); this.advanceAnim(); return;
         }
       }
 
       if(this.moveFrame>=total){
-        this.move=null; this.canCancel=false;
+        this.interruptMove();
         const down = this.buf.held(BTN.DOWN);
         this.setState(this.onGround?(down?'crouch':'idle'):'jump');
       }else{
@@ -920,45 +974,40 @@ class Fighter{
     const down = (held&BTN.DOWN)!==0;
     const dir  = ((held&BTN.RIGHT)?1:0) - ((held&BTN.LEFT)?1:0);
 
-    // specials always win over normals
-    const sp = this.buf.detectSpecial();
-    if(sp && this.onGround){
-      this.buf.consume(sp.btn);
+    const sp = this.onGround ? this.buf.detectSpecial() : null;
+    if(sp){
+      this.buf.consumeAttacks(); this.buf.consume('up');
       this.startMove(sp.move,false);
       this.applyPhysics(opp); this.advanceAnim(); return;
     }
 
-    if(!this.onGround){
-      if(this.buf.avail('punch')||this.buf.avail('kick')){
-        this.buf.consume(this.buf.avail('kick')?'kick':'punch');
-        this.startMove('jumpKick');
-      }else{
-        this.vx = clamp(this.vx + dir*PHYS.airDrift*0.35, -6.2, 6.2);
-        this.setState('jump', this.vy<0?'jump':'fall');
-      }
-    } else if(held&BTN.BLOCK){
-      this.setState(down?'crouchBlock':'block');
-    } else if(this.buf.avail('punch') && down){
-      this.buf.consume('punch'); this.startMove('lowKick');
-    } else if(this.buf.avail('kick') && down){
-      this.buf.consume('kick'); this.startMove('lowKick');
-    } else if(this.buf.avail('punch')){
-      this.buf.consume('punch'); this.startMove('punch');
-    } else if(this.buf.avail('kick')){
-      this.buf.consume('kick'); this.startMove('kick');
-    } else if(down){
-      this.setState('crouch');
-    } else if(this.buf.avail('up')){
+    if(this.onGround && this.buf.avail('up')){
       this.buf.consume('up');
-      this.vy = PHYS.jumpVel; this.onGround=false;
-      this.vx = dir*4.4;
+      this.vy=PHYS.jumpVel; this.onGround=false; this.vx=dir*4.4;
       this.setState('jump'); Audio5.play('jump',0.4);
-    } else if(dir!==0){
-      const fwd = (dir===this.face);
-      this.vx = dir * (fwd?PHYS.walkSpeed:PHYS.backSpeed);
+    }
+    const attack=this.buf.avail('kick')?'kick':this.buf.avail('punch')?'punch':null;
+    if(!this.onGround){
+      if(attack){
+        this.buf.consumeAttacks();
+        this.startMove(attack==='kick'?'jumpKick':'jumpPunch');
+      }else{
+        this.vx=clamp(this.vx+dir*PHYS.airDrift*0.35,-6.2,6.2);
+        this.setState('jump',this.vy<0?'jump':'fall');
+      }
+    }else if(held&BTN.BLOCK){
+      this.setState(down?'crouchBlock':'block');
+    }else if(attack){
+      this.buf.consumeAttacks();
+      this.startMove(down?(attack==='kick'?'lowKick':'lowPunch'):attack);
+    }else if(down){
+      this.setState('crouch');
+    }else if(dir!==0){
+      const fwd=dir===this.face;
+      this.vx=dir*(fwd?PHYS.walkSpeed:PHYS.backSpeed);
       this.setState(fwd?'walk':'back');
-    } else {
-      this.vx *= PHYS.friction;
+    }else{
+      this.vx*=PHYS.friction;
       this.setState('idle');
     }
 
@@ -983,6 +1032,7 @@ class Fighter{
       }
       this.y=FLOOR; this.vy=0; this.onGround=true; this.gravMul=1;
       if(this.state==='airstun'){ this.stun=Math.max(this.stun,8); this.setState('hitstun','hit'); }
+      else if(this.move?.air){ this.interruptMove(); this.setState('idle'); }
       else if((this.state==='jump'||this.state==='airAtk') && !this.move) this.setState('idle');
     } else this.onGround=false;
 
@@ -1415,6 +1465,8 @@ function updateFlow(){
 function endRound(winner, byKo){
   Game.winner=winner; Game.phase='ko'; Game.phaseT=0;
   Game.hitstop=18;
+  for(const fighter of FIGHTERS){ fighter.interruptMove(); fighter.buf.clearPending(true); }
+  Projectiles.clear();
   const loser = winner==='p1'?P2:(winner==='p2'?P1:null);
   if(loser){ loser.setState('ko'); loser.vx=-loser.face*7; loser.vy=-8; loser.onGround=false; }
   else { P1.setState('ko'); P2.setState('ko'); }
@@ -1489,15 +1541,15 @@ function simulate(maskA, maskB){
        buffer — cancels and specials are routinely input during hitstop,
        and dropping those frames would eat the player's motion. */
     Game.hitstop--;
-    P1.buf.push(Game.phase==='fight'?maskA:0, P1.face);
-    P2.buf.push(Game.phase==='fight'?maskB:0, P2.face);
+    P1.buf.push(Game.phase==='fight'?maskA:0, P1.face, true);
+    P2.buf.push(Game.phase==='fight'?maskB:0, P2.face, true);
     return;
   }
   const live=(Game.phase==='fight');
   P1.update(live?maskA:0, P2);
   P2.update(live?maskB:0, P1);
   if(live){ resolveCombat(P1,P2); resolveCombat(P2,P1); }
-  Projectiles.update(FIGHTERS);
+  if(live) Projectiles.update(FIGHTERS);
 }
 
 function deterministicHash(){
@@ -1689,7 +1741,10 @@ function updateDiag(dt){
     'JS heap    '+heap+'\n'+
     'net        '+Net.state+' '+(Net.role||'')+' frame '+Game.frame+'\n'+
     'buffer P1  '+['punch','kick','up'].map(k=>k[0]+':'+(P1.buf.pressAge[k]>20?'-':P1.buf.pressAge[k])).join(' ')+
-       '   dirs '+[4,3,2,1,0].map(i=>P1.buf.dirAgo(i)).join('');
+       '   dirs '+[4,3,2,1,0].map(i=>P1.buf.dirAgo(i)).join('')+'\n'+
+    'input P1   '+LiveInput[0].peek()+' sim '+P1.buf.cur()+' '+P1.state+' '+(P1.move?.key||'-')+'\n'+
+    'commands   '+P1.buf.completed.map(c=>c.move+':'+c.age).join(' ')+' '+
+       (P1.move?'busy / cancel '+P1.canCancel:P1.stun>0?'stun '+P1.stun:'free');
 }
 
 /* ====================== PHASE 1.2 — GAME LOOP ======================= */
@@ -1697,14 +1752,14 @@ const STEP = 1000/60;
 let acc=0, last=performance.now(), fpsAcc=0, fpsN=0;
 
 function localMask(){
-  return (LiveInput[0] | TouchMask);
+  return LiveInput[0].take();
 }
 
 function stepLocal(){
   if(Game.paused) return;
   const t0=performance.now();
   const a = localMask();
-  const b = Game.cpu ? cpuMask(P2,P1) : LiveInput[1];
+  const b = Game.cpu ? cpuMask(P2,P1) : LiveInput[1].take();
   simulate(a,b);
   DEBUG.stepMs = performance.now()-t0;
 }
@@ -1718,7 +1773,7 @@ function frame(now){
 
   if(Net.state!=='idle'){
     acc=0;
-    Net.tick(now,localMask(),document.hidden);
+    Net.tick(now,()=>localMask(),document.hidden);
   }else if(Game.phase!=='boot' && !document.hidden && !document.getElementById('boot')){
     acc += dt*(1-Game.slowmo*0.72);
     let guard=0;
@@ -1749,7 +1804,7 @@ function syncToggles(){
 tBox.onclick=()=>{DEBUG.boxes=!DEBUG.boxes;syncToggles();};
 tDiag.onclick=()=>{DEBUG.diag=!DEBUG.diag;syncToggles();};
 tPad.onclick=()=>{touchRoot.classList.toggle('on');cachePadRects();syncToggles();};
-tCpu.onclick=()=>{if(Net.state!=='idle')return;Game.cpu=!Game.cpu;syncToggles();UI.sync();};
+tCpu.onclick=()=>{if(Net.state!=='idle')return;Game.cpu=!Game.cpu;clearKeys();syncToggles();UI.sync();};
 tMute.onclick=()=>{Audio5.init();Audio5.resume();Audio5.muted=!Audio5.muted;syncToggles();};
 function openNet(){
   clearKeys(); document.getElementById('netui').style.display='flex';
@@ -1862,7 +1917,7 @@ async function boot(){
     CONFIG_FINGERPRINT = configFingerprint({fighter:loader.assets.fighter,
       rules:loader.assets.rules,stage:loader.assets.stage});
     const sources=await Promise.all(['index.html','shared/netplay.js','shared/lockstep.js',
-      'shared/configLoader.js','shared/integrity.js','shared/sprites.js','shared/characters.js',
+      'shared/input.js','shared/configLoader.js','shared/integrity.js','shared/sprites.js','shared/characters.js',
       'assets/fighters/ai.json',...CHARACTERS.map(character=>character.image)].map(async path=>{
       const response=await fetch(new URL(path,location.href),{cache:'no-store'});
       if(!response.ok) throw new Error('无法读取构建指纹 '+path);

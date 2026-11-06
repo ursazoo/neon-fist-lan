@@ -235,7 +235,8 @@
         "uppercut",
         "spinKick"
       ],
-      "cancelOnBlock": true
+      "cancelOnBlock": true,
+      "crouch": true
     },
     "jumpKick": {
       "key": "jumpKick",
@@ -344,6 +345,64 @@
       },
       "driveVel": 6.4,
       "cancelInto": []
+    },
+    "lowPunch": {
+      "key": "lowPunch",
+      "anim": "lowPunch",
+      "startup": 4,
+      "active": 3,
+      "recovery": 10,
+      "damage": 5,
+      "chip": 1,
+      "hitstun": 13,
+      "blockstun": 8,
+      "pushHit": 5,
+      "pushBlock": 3.4,
+      "selfPush": 0.6,
+      "height": "low",
+      "weight": "light",
+      "sfx": "punch",
+      "meter": 6,
+      "box": {
+        "x": 20,
+        "y": -76,
+        "w": 42,
+        "h": 20
+      },
+      "cancelInto": [
+        "fireball",
+        "uppercut",
+        "spinKick"
+      ],
+      "cancelOnBlock": true,
+      "crouch": true
+    },
+    "jumpPunch": {
+      "key": "jumpPunch",
+      "anim": "jumpPunch",
+      "startup": 3,
+      "active": 6,
+      "recovery": 7,
+      "damage": 7,
+      "chip": 1,
+      "hitstun": 15,
+      "blockstun": 9,
+      "pushHit": 5,
+      "pushBlock": 3.4,
+      "selfPush": 0.6,
+      "height": "overhead",
+      "weight": "light",
+      "sfx": "punch",
+      "meter": 6,
+      "box": {
+        "x": 26,
+        "y": -108,
+        "w": 58,
+        "h": 26
+      },
+      "cancelInto": [],
+      "cancelOnBlock": true,
+      "air": true
     }
   },
   "palettes": {

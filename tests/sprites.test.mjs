@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { test } from 'node:test';
+import { BTN, normalizeMask } from '../shared/input.js';
 import { loadSprites, sampleSprite } from '../shared/sprites.js';
 
 const read = name => readFileSync(new URL('../' + name, import.meta.url));
@@ -20,10 +21,12 @@ const fighter = patch => ({ side:'p1',state:'idle',stateFrame:0,move:null,moveFr
   anim:'idle',vy:0,onGround:true,...patch });
 const sample = patch => sampleSprite(fighter(patch), meta);
 
-test('all seven moves show extended limbs only in the active phase at exact boundaries', () => {
+test('all nine moves show extended limbs only in the active phase at exact boundaries', () => {
   const anchors = {
     punch: ['punch0','punch1','punch3','punch2','idle0'],
     kick: ['kick1','kick2','kick3','kick1','idle0'],
+    lowPunch: ['low0','low1','low1','low0','low0'],
+    jumpPunch: ['air1','punch1','punch3','air1','jump2'],
     lowKick: ['low2','low3','low3','low2','low0'],
     jumpKick: ['air2','air3','air3','air2','jump2'],
     fireball: ['fire2','fire1','fire3','fire2','idle0'],
@@ -35,7 +38,7 @@ test('all seven moves show extended limbs only in the active phase at exact boun
     const ticks = [move.startup - 1,move.startup,endActive - 1,endActive,endActive + move.recovery - 1];
     const phases = ['startup','active','active','recovery','recovery'];
     for (let i = 0; i < ticks.length; i++) {
-      const frame = sample({ state:move.special?'special':move.air?'airAtk':key==='lowKick'?'crouchAtk':'attack',move,moveFrame:ticks[i] });
+      const frame = sample({ state:move.special?'special':move.air?'airAtk':move.crouch?'crouchAtk':'attack',move,moveFrame:ticks[i] });
       assert.equal(frame.clip, key);
       assert.equal(frame.frameName, expected[i], key + ' at ' + ticks[i]);
       assert.equal(frame.phase, phases[i], key + ' phase at ' + ticks[i]);
@@ -85,7 +88,7 @@ test('grounded KO visibly falls before holding down; airborne KO waits for landi
 function actualFighters() {
   const html = read('index.html').toString();
   const source = html.slice(html.indexOf('let BUFFER_LEN ='), html.indexOf('/* ====================== PHASE 8'));
-  const context = vm.createContext({ FLOOR:452,MOVES:moves,SCALING:config.scaling,
+  const context = vm.createContext({ BTN,normalizeMask,BIT_OF:{punch:16,kick:32,up:4,block:64,fireball:128,uppercut:256,spinKick:512},FLOOR:452,MOVES:moves,SCALING:config.scaling,
     scaleAt:(table,index)=>table[Math.min(index,table.length-1)],
     clamp:(value,min,max)=>Math.max(min,Math.min(value,max)),
     Audio5:{ play(){} },FX:{ spark(){},cancelFlash(){} },Juice:{ impact(){} },Rng:{ range:()=>0 },
@@ -94,12 +97,12 @@ function actualFighters() {
   return context.fighters;
 }
 
-test('actual repeated hits restart immediately over residual moves; block and KO take priority', () => {
+test('actual repeated hits interrupt old moves; block and KO take priority', () => {
   const [attacker, victim] = actualFighters();
   victim.startMove('kick'); victim.moveFrame = 10;
   victim.takeHit(moves.punch, attacker);
   assert.equal(victim.stateFrame, 0);
-  assert.equal(victim.move.key, 'kick');
+  assert.equal(victim.move, null);
   assert.equal(sampleSprite(victim, meta).frameName, 'hit1');
   victim.stateFrame = 6;
   assert.equal(sampleSprite(victim, meta).frameName, 'hit3');
