@@ -1,8 +1,8 @@
 export const BTN = Object.freeze({
   LEFT:1, RIGHT:2, UP:4, DOWN:8, PUNCH:16, KICK:32, BLOCK:64,
-  FIREBALL:128, UPPERCUT:256, SPIN:512, CLEAR:1024,
+  FIREBALL:128, UPPERCUT:256, SPIN:512, CLEAR:1024, SUPER:2048,
 });
-export const MAX_INPUT_MASK = 2047;
+export const MAX_INPUT_MASK = 4095;
 const AXES = [BTN.LEFT | BTN.RIGHT, BTN.UP | BTN.DOWN];
 
 export function normalizeMask(mask) {

@@ -7,6 +7,7 @@ const p=await tab(Number(process.env.CDP_PORT||19334),process.env.SITE_URL||'htt
 const checks=[];
 async function key(code,down){await p.send('Input.dispatchKeyEvent',{type:down?'keyDown':'keyUp',code,key:code.slice(3).toLowerCase()});}
 async function record(n){return p.eval(`new Promise(resolve=>{const rows=[];function read(){rows.push({step:NEON.Game.frame,state:NEON.P1.state,move:NEON.P1.move?.key,moveFrame:NEON.P1.moveFrame,sprite:NEON.sprites.frame('p1')});if(rows.length<${n})requestAnimationFrame(read);else resolve(rows);}requestAnimationFrame(read);})`);}
+async function recordSteps(n){return p.eval(`new Promise(resolve=>{const first=NEON.Game.frame,rows=[];function read(){rows.push({step:NEON.Game.frame,state:NEON.P1.state,sprite:NEON.sprites.frame('p1')});if(NEON.Game.frame-first<${n})requestAnimationFrame(read);else resolve(rows);}requestAnimationFrame(read);})`);}
 async function action(code,n=42){
  await p.eval(`window.__spriteTrace=[];window.__spriteDone=new Promise(resolve=>{function read(){__spriteTrace.push({step:NEON.Game.frame,state:NEON.P1.state,move:NEON.P1.move?.key,moveFrame:NEON.P1.moveFrame,sprite:NEON.sprites.frame('p1')});if(__spriteTrace.length<${n})requestAnimationFrame(read);else resolve(__spriteTrace);}requestAnimationFrame(read);});void 0;`);
  await key(code,true);await record(3);await key(code,false);
@@ -16,10 +17,11 @@ try{
  await until(()=>p.eval('!!window.NEON?.sprites'),Boolean,15000);
  await p.eval('document.getElementById("start").click()');
  await until(()=>p.eval('NEON.Game.phase'),x=>x==='fight');
- await p.eval('NEON.Game.cpu=false;NEON.P1.x=300;NEON.P2.x=850;');
+ await p.eval('NEON.Game.cpu=false;NEON.Projectiles.clear();for(const f of [NEON.P1,NEON.P2]){f.reset(true);f.setState("idle");}NEON.P1.x=300;NEON.P2.x=850;');
  const idle=await record(40);
  assert(new Set(idle.map(x=>x.sprite.frameName)).size>=4,'idle plays all four sprite drawings');
- await key('KeyD',true);const walk=await record(40);await key('KeyD',false);
+ await key('KeyD',true);const walk=await recordSteps(36);await key('KeyD',false);
+ await writeFile(new URL('walk-trace.json',destination),JSON.stringify(walk,null,2));
  assert(new Set(walk.filter(x=>x.state==='walk').map(x=>x.sprite.frameName)).size>=5,'walk plays at least five drawings');
  await record(4);
  const punch=await action('KeyJ');

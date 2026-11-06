@@ -22,7 +22,7 @@ try{
  for(const[buttons,expected]of[[['KeyS','KeyJ'],'lowPunch'],[['KeyS','KeyK'],'lowKick'],[['KeyJ','KeyK'],'kick']]){
   await reset(p);await tap(p,...buttons);await move(p,expected);await frames(p,35);assert.equal((await p.eval('__moves.filter(x=>x.side==="p1")')).length,1);pass('explicit chord resolves once',{buttons,expected});
  }
- for(const[button,expected]of[['KeyU','fireball'],['KeyI','uppercut'],['KeyO','spinKick']]){await reset(p);await tap(p,button);await move(p,expected);pass('single-key special',{button,expected});}
+ for(const[button,expected]of[['KeyU','deepseekSweep'],['KeyI','deepseekCounter'],['KeyO','deepseekSlide']]){await reset(p);await tap(p,button);await move(p,expected);pass('single-key special',{button,expected});}
  await reset(p);await events(p,[['KeyS',true],['KeyS',false],['KeyW',true],['KeyJ',true]]);await move(p,'jumpPunch');assert(await p.eval('!NEON.P1.onGround'));pass('released down cannot suppress the following jump attack');
  await reset(p);await events(p,[['KeyJ',true]]);await frames(p,80);assert.equal((await p.eval('__moves.filter(x=>x.side==="p1")')).length,1);await events(p,[['KeyJ',false]]);await frames(p,2);await tap(p,'KeyJ');await until(()=>p.eval('__moves.filter(x=>x.side==="p1").length'),n=>n===2);pass('hold does not repeat; release and press works');
  await reset(p);await events(p,[['KeyW',true],['Space',true],['KeyW',false]]);await frames(p,3);assert((await p.eval('NEON.P1.buf.cur()'))&4);await events(p,[['Space',false]]);await frames(p,3);assert.equal((await p.eval('NEON.P1.buf.cur()'))&4,0);pass('jump aliases retain other held source');
@@ -53,14 +53,14 @@ try{
  await click(a,'nHost');const offer=await until(()=>a.eval('document.getElementById("netout").value'),Boolean,15000);await click(b,'nJoin');await b.eval(`document.getElementById('netin').value=${JSON.stringify(offer)}`);await click(b,'nAccept');const answer=await until(()=>b.eval('document.getElementById("netout").value'),Boolean,15000);await a.eval(`document.getElementById('netin').value=${JSON.stringify(answer)}`);await click(a,'nAccept');
  for(const q of[a,b])await until(()=>q.eval('NEON.Game.phase'),x=>x==='fight',15000);
  await tap(a,'KeyW','KeyJ');await move(a,'jumpPunch');await move(b,'jumpPunch');pass('network preserves short jump chord');await frames(a,55);
- await tap(b,'KeyI');await move(a,'uppercut','p2');await move(b,'uppercut','p2');pass('network accepts expanded special input bits');await frames(a,60);
+ await tap(b,'KeyI');await move(a,'deepseekCounter','p2');await move(b,'deepseekCounter','p2');pass('network accepts expanded special input bits');await frames(a,60);
  const blocking=b.send('Runtime.evaluate',{expression:'(()=>{const end=performance.now()+1000;while(performance.now()<end){};})()'});
- await until(()=>a.eval('NEON.Net.state'),x=>x==='waiting',2000);await tap(a,'KeyU');await blocking;await move(a,'fireball');await move(b,'fireball');await frames(a,10);pass('short special pressed during network wait is retained');
+ await until(()=>a.eval('NEON.Net.state'),x=>x==='waiting',2000);await tap(a,'KeyU');await blocking;await move(a,'deepseekSweep');await move(b,'deepseekSweep');await frames(a,10);pass('short special pressed during network wait is retained');
  await frames(a,60);
  const target=await a.eval('NEON.Game.frame+45');
  for(const q of[a,b])await q.eval(`(()=>{const original=NEON.P1.update;NEON.P1.update=function(mask,opp){if(NEON.Game.frame===${target}){this.setState('hitstun');this.stun=30;this.update=original;}return original.call(this,mask,opp);};window.__moves=[];})()`);
  await until(()=>a.eval('NEON.P1.stun'),x=>x>20);await tap(a,'KeyU');
- for(const q of[a,b])await until(()=>q.eval('NEON.P1.buf.detectSpecial()?.move'),x=>x==='fireball');
+ for(const q of[a,b])await until(()=>q.eval('NEON.P1.buf.detectSpecial()?.move'),x=>x==='deepseekSweep');
  await a.eval(`window.dispatchEvent(new Event('blur'))`);
  for(const q of[a,b])await until(()=>q.eval('NEON.P1.buf.detectSpecial()'),x=>x===null);
  await frames(a,40);

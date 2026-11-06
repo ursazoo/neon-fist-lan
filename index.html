@@ -56,7 +56,7 @@
   #touch.on{opacity:1;}
   .zone{position:absolute;bottom:2.5vh;pointer-events:auto;display:grid;gap:8px;}
   #dpad{left:2.5vw;grid-template-columns:repeat(3,var(--k));grid-template-rows:repeat(2,var(--k));--k:clamp(44px,9vh,82px);}
-  #btns{right:2.5vw;grid-template-columns:repeat(2,var(--k));grid-template-rows:repeat(2,var(--k));--k:clamp(50px,10vh,88px);}
+  #btns{right:2.5vw;grid-template-columns:repeat(4,var(--k));grid-template-rows:repeat(2,var(--k));--k:clamp(40px,9vh,78px);}
   .key{display:flex;align-items:center;justify-content:center;border-radius:14px;
     background:rgba(24,18,38,.55);border:2px solid rgba(140,120,200,.45);
     font-size:clamp(9px,1.7vh,14px);color:#dcd3ff;backdrop-filter:blur(4px);
@@ -193,7 +193,11 @@
     <div class="zone" id="btns">
       <div class="key atk" data-k="punch">PUNCH</div>
       <div class="key atk" data-k="kick">KICK</div>
-      <div class="key" data-k="block" style="grid-area:2/1/3/3">BLOCK</div>
+      <div class="key" data-k="block" style="grid-area:1/3/2/5">BLOCK</div>
+      <div class="key atk" data-k="fireball">U</div>
+      <div class="key atk" data-k="uppercut">I</div>
+      <div class="key atk" data-k="spinKick">O</div>
+      <div class="key atk" data-k="super">N</div>
     </div>
   </div>
   <div id="netui">
@@ -245,8 +249,10 @@
     <fieldset class="character-group"><legend>本机角色</legend><div class="character-picker" data-picker="local"></div></fieldset>
     <fieldset class="character-group"><legend>CPU 对手</legend><div class="character-picker" data-picker="opponent"></div></fieldset>
     <p>MOVE A/D · JUMP W/SPACE · CROUCH S · PUNCH J · KICK K · BLOCK L<br>
-       <b>FIREBALL</b> U / ↓ ↘ → + J &nbsp;·&nbsp; <b>UPPERCUT</b> I / → ↓ ↘ + J &nbsp;·&nbsp; <b>SPIN KICK</b> O / ↓ ↙ ← + K<br>
-       联机双方均使用 WASD + JKL。主机控制 P1，客机控制 P2。</p>
+       U 牵制 · I 防守 · O 特色技 · N 超必杀（100 气）<br>
+       经典指令 ↓ ↘ → + J / → ↓ ↘ + J / ↓ ↙ ← + K 对应 U / I / O。<br>
+       联机双方均使用上述按键。主机控制 P1，客机控制 P2。本地 P2 用方向键与数字 1–7。</p>
+    <p id="skill-help"></p>
     <div class="row"><button class="btn" id="start">本地练习</button>
     <button class="btn" id="openNet">同 Wi-Fi 联机</button></div>
     <p><a href="assets/fighters/CREDITS.md" style="color:inherit">角色与素材来源</a></p>
@@ -259,12 +265,16 @@ import { auditFighterConfig, configFingerprint, hashGameState }
   from './shared/integrity.js';
 import { createSession } from './shared/netplay.js';
 import { loadSprites } from './shared/sprites.js';
+import { loadSkillSprites, SKILL_ASSETS } from './shared/skillSprites.js';
+import * as Skills from './shared/skills.js';
 import { BTN, InputState, normalizeMask } from './shared/input.js';
 import { createRooms, normalizeRoomCode, roomLink } from './shared/rooms.js';
 import { CHARACTERS } from './shared/characters.js';
 const characterById = Object.fromEntries(CHARACTERS.map(character=>[character.id,character]));
 const selection = { local:'deepseek', opponent:'claude' };
 let Sprites = null;
+let SkillSprites = null;
+let lastStepFrozen = false;
 let CONFIG_FINGERPRINT = null;
 let BUILD_FINGERPRINT = null;
 const INPUT_DELAY = 2;
@@ -569,17 +579,17 @@ const Audio5 = (()=>{
    The sim then consumes the freshest mask at step time.               --- */
 const BIT_OF = { left:BTN.LEFT, right:BTN.RIGHT, up:BTN.UP, crouch:BTN.DOWN,
                  punch:BTN.PUNCH, kick:BTN.KICK, block:BTN.BLOCK,
-                 fireball:BTN.FIREBALL, uppercut:BTN.UPPERCUT, spinKick:BTN.SPIN };
+                 fireball:BTN.FIREBALL, uppercut:BTN.UPPERCUT, spinKick:BTN.SPIN, super:BTN.SUPER };
 
 const KEYMAP = {
   0:{ KeyA:BTN.LEFT, KeyD:BTN.RIGHT, KeyW:BTN.UP, KeyS:BTN.DOWN,
       KeyJ:BTN.PUNCH, KeyK:BTN.KICK, KeyL:BTN.BLOCK, Space:BTN.UP,
-      KeyU:BTN.FIREBALL, KeyI:BTN.UPPERCUT, KeyO:BTN.SPIN },
+      KeyU:BTN.FIREBALL, KeyI:BTN.UPPERCUT, KeyO:BTN.SPIN, KeyN:BTN.SUPER },
   1:{ ArrowLeft:BTN.LEFT, ArrowRight:BTN.RIGHT, ArrowUp:BTN.UP, ArrowDown:BTN.DOWN,
       Digit1:BTN.PUNCH, Numpad1:BTN.PUNCH, Digit2:BTN.KICK, Numpad2:BTN.KICK,
       Digit3:BTN.BLOCK, Numpad3:BTN.BLOCK,
       Digit4:BTN.FIREBALL, Numpad4:BTN.FIREBALL, Digit5:BTN.UPPERCUT, Numpad5:BTN.UPPERCUT,
-      Digit6:BTN.SPIN, Numpad6:BTN.SPIN }
+      Digit6:BTN.SPIN, Numpad6:BTN.SPIN, Digit7:BTN.SUPER, Numpad7:BTN.SUPER }
 };
 const LiveInput = [new InputState(), new InputState()];
 
@@ -686,7 +696,7 @@ class InputBuffer{
   constructor(){
     this.hist = new Int32Array(64);
     this.dirs = new Int8Array(64);
-    this.pressAge = {punch:99,kick:99,up:99,block:99,fireball:99,uppercut:99,spinKick:99};
+    this.pressAge = {punch:99,kick:99,up:99,block:99,fireball:99,uppercut:99,spinKick:99,super:99};
     this.consumed = {};
     this.reset();
   }
@@ -701,7 +711,7 @@ class InputBuffer{
     this.dirs.fill(5);
     if(resetHeld){ this.prev=0; this.hist.fill(0); }
   }
-  push(rawMask, face, frozen=false){
+  push(rawMask, face, frozen=false, fighter=null){
     if(rawMask & BTN.CLEAR) this.clearPending(true);
     const mask=normalizeMask(rawMask & ~BTN.CLEAR);
     this.frame++;
@@ -731,25 +741,30 @@ class InputBuffer{
         if(motion.btn===btn && this.matchMotion(motion.seq,motion.window) &&
            (!best || motion.priority>best.priority)) best=motion;
       }
-      if(best){ this.latch(best,btn); this.consume(btn); }
+      if(best){ this.latch(best,btn,fighter); this.consume(btn); }
     }
     for(const motion of MOTIONS){
       if(rising & BIT_OF[motion.move]){
-        this.latch(motion,motion.move); this.consume(motion.move);
+        this.latch(motion,motion.move,fighter); this.consume(motion.move);
       }
+    }
+    if(rising & BTN.SUPER){
+      if(fighter) this.latch({move:'super',priority:4},'super',fighter);
+      this.consume('super');
     }
     this.prev=mask;
   }
-  latch(motion,btn){
+  latch(motion,btn,fighter){
     this.completed=this.completed.filter(command=>command.btn!==btn);
-    this.completed.push({move:motion.move,btn,trigger:this.frame,age:0,priority:motion.priority});
+    const request=fighter?Skills.bindRequest(fighter,motion.move):{move:motion.move,input:motion.move};
+    if(request) this.completed.push({...request,btn,trigger:this.frame,age:0,priority:motion.priority});
   }
   cur(){ return this.hist[this.head]; }
   held(bit){ return (this.cur()&bit)!==0; }
   avail(k){ return !this.consumed[k] && this.pressAge[k]<=BUFFER_LEN; }
   consume(k){ this.consumed[k]=true; }
   consumeAttacks(){
-    for(const k of ['punch','kick','fireball','uppercut','spinKick']) this.consume(k);
+    for(const k of ['punch','kick','fireball','uppercut','spinKick','super']) this.consume(k);
     this.completed=[];
     this.dirs.fill(5);
   }
@@ -771,7 +786,7 @@ class InputBuffer{
   detectSpecial(allowed=null){
     let best=null;
     for(const command of this.completed){
-      if(command.age>BUFFER_LEN || allowed && !allowed.includes(command.move)) continue;
+      if(command.age>BUFFER_LEN || allowed && !allowed.includes(command.input || command.move)) continue;
       if(!best || command.priority>best.priority ||
          command.priority===best.priority && command.trigger>best.trigger) best=command;
     }
@@ -804,11 +819,13 @@ const STATES = {
 class Fighter{
   constructor(idx,x,pal,name){
     this.idx=idx; this.side=idx===0?'p1':'p2'; this.name=name; this.pal=pal;
+    this.character=null;
     this.spawnX=x; this.rounds=0;
     this.buf=new InputBuffer();
     this.reset(true);
   }
   reset(full){
+    this.skill=Skills.freshState();
     this.x=this.spawnX; this.y=FLOOR;
     this.vx=0; this.vy=0; this.face=this.idx===0?1:-1;
     this.state='frozen'; this.stateFrame=0;
@@ -826,6 +843,9 @@ class Fighter{
     if(full) this.rounds=0;
   }
   save(o){
+    o.character=this.character;
+    o.skill={...this.skill,trap:this.skill.trap?{...this.skill.trap}:null,
+      superConfirm:this.skill.superConfirm?{...this.skill.superConfirm}:null};
     o.x=this.x; o.y=this.y; o.vx=this.vx; o.vy=this.vy; o.face=this.face;
     o.state=this.state; o.stateFrame=this.stateFrame;
     o.move=this.move?this.move.key:null; o.moveFrame=this.moveFrame;
@@ -849,7 +869,8 @@ class Fighter{
   hurtboxes(){
     const key = this.state==='blockstun' && this.guard==='low' ? 'crouch' : STATES[this.state].hurt;
     const out=[];
-    for(const b of HURT[key]){
+    const profile=this.moveFrame<(this.move?.startup || 0)+(this.move?.active || 0)?this.move?.lowProfile:null;
+    for(const b of profile?[profile]:HURT[key]){
       out.push({x:this.x + (this.face>0? b.x : -b.x-b.w), y:this.y + b.y, w:b.w, h:b.h});
     }
     return out;
@@ -858,6 +879,7 @@ class Fighter{
     if(!['attack','crouchAtk','airAtk','special'].includes(this.state) || !this.move || !this.move.box) return null;
     const m=this.move, f=this.moveFrame;
     if(f < m.startup || f >= m.startup+m.active) return null;
+    if(m.slide && !this.skill.slideStopped) return null;
     if(m.multiHit){ if(this.multiTick!==0) return null; }
     else if(this.hasHit) return null;
     const b=m.box;
@@ -866,13 +888,15 @@ class Fighter{
   get pushbox(){ return {x:this.x-26,y:this.y-150,w:52,h:150}; }
 
   interruptMove(){
+    this.skill.contact=null; this.skill.slideStopped=false;
+    this.skill.reflectionUsed=false; this.skill.superConfirm=null;
     this.move=null; this.moveFrame=0; this.hasHit=false; this.hitTargets=0;
     this.multiTick=0; this.canCancel=false; this.cancelUsed=false; this.invuln=0;
   }
 
   setState(s,anim){
     if(['hitstun','airstun','blockstun','ko','win','frozen'].includes(s)) this.interruptMove();
-    if(['ko','win','frozen'].includes(s)) this.buf.clearPending();
+    if(['ko','win','frozen'].includes(s)){ this.buf.clearPending(); this.skill.trap=null; }
     if(s!=='blockstun') this.guard=s==='block'?'high':s==='crouchBlock'?'low':null;
     if(this.state===s && !anim) return;
     this.state=s; this.stateFrame=0;
@@ -883,15 +907,22 @@ class Fighter{
 
   /* ---- 7.3 start a move, honouring cancel rules ---- */
   startMove(key, isCancel){
-    const m=MOVES[key]; if(!m) return false;
-    if(m.special && this.meter < 0) return false;
+    const m=MOVES[key] || Skills.moveFor(this.character,key); if(!m) return false;
+    if(m.cost && this.meter < m.cost) return false;
+    if(m.skillArt && !this.onGround) return false;
+    if(m.projectileData && Projectiles.list.some(p=>p.active && p.owner===this.idx)) return false;
+    if(m.trap==='place' && this.skill.trap) return false;
+    if(m.trap==='trigger' && this.skill.trap?.phase!=='armed') return false;
+    this.skill.serial++; this.skill.contact=null; this.skill.slideStopped=false;
+    this.skill.reflectionUsed=false; this.skill.superConfirm=null;
+    if(m.cost) this.addMeter(-m.cost);
     this.move=m; this.moveFrame=0; this.hasHit=false; this.hitTargets=0;
     this.multiTick=0; this.canCancel=false; this.cancelUsed=false;
     if(m.invuln) this.invuln=m.invuln[1];
     const st = m.special ? 'special' : m.air ? 'airAtk' : m.crouch ? 'crouchAtk' : 'attack';
     this.setState(st, m.anim);
     if(m.riseVel){ this.vy=m.riseVel; this.onGround=false; }
-    if(m.driveVel){ this.vx=this.face*m.driveVel; }
+    if(m.driveVel){ this.vx=m.slide?0:this.face*m.driveVel; }
     if(isCancel){ FX.cancelFlash(this); Audio5.play('counter',0.35,1.4); }
     Audio5.play(m.special?'fire':'whiff', m.special?0.5:0.25, 0.9+Rng.range(0,0.2));
     return true;
@@ -900,16 +931,24 @@ class Fighter{
   addMeter(v){ this.meter = clamp(this.meter+v, 0, 100); }
 
   /* ---- 3.2 / 7.4 receiving a hit ---- */
-  takeHit(atk, attacker){
+  takeHit(atk, attacker, attackFace=attacker.face){
     if(['ko','win','frozen'].includes(this.state)) return 'ignored';
     if(this.invuln>0) return 'invuln';
+    if(Skills.inWindow(this,'counter') && (atk.kind || 'melee')==='melee' &&
+       !atk.projectile && atk.height!=='low' &&
+       (attacker.x-this.x)*this.face>=0 && Math.abs(attacker.x-this.x)<=150){
+      this.startMove('deepseekCounterHit');
+      this.moveFrame=this.move.startup; this.hasHit=true;
+      attacker.takeHit(this.move,this);
+      return 'counter';
+    }
     const blockedHigh = this.state==='block' || this.state==='blockstun' && this.guard==='high';
     const blockedLow = this.state==='crouchBlock' || this.state==='blockstun' && this.guard==='low';
     let blocked=false;
     if(blockedHigh && atk.height!=='low') blocked=true;
     if(blockedLow  && atk.height!=='overhead') blocked=true;
 
-    const dir = attacker.face;
+    const dir = attackFace;
     this.interruptMove();
     if(blocked){
       this.hp = Math.max(0, this.hp - atk.chip);
@@ -927,6 +966,7 @@ class Fighter{
     }
 
     this.buf.clearPending();
+    this.skill.trap=null;
 
     /* --- 7.4 progressive scaling --- */
     const n = attacker.combo;
@@ -953,6 +993,40 @@ class Fighter{
     return 'hit';
   }
 
+  specialRequest(allowed=null){
+    this.buf.completed=this.buf.completed.filter(command=>Skills.validRequest(this,command));
+    return this.buf.detectSpecial(allowed);
+  }
+
+  advanceSkill(opp){
+    const m=this.move;
+    if(m.trap==='place' && this.moveFrame===m.startup){
+      this.skill.trap={id:this.skill.serial,x:clamp(this.x+this.face*Skills.TRAP.offset,WALL_L,WALL_R),
+        y:FLOOR,face:this.face,life:Skills.TRAP.life,phase:'armed',age:0,hit:false};
+    }
+    if(m.trap==='trigger' && this.moveFrame===m.startup && this.skill.trap?.phase==='armed'){
+      this.skill.trap.phase='warning'; this.skill.trap.age=0;
+    }
+    const confirm=this.skill.superConfirm;
+    if(confirm){
+      confirm.age++;
+      if(confirm.age===m.confirm.delay && !confirm.finished){
+        confirm.finished=true;
+        if(opp.idx===confirm.target) opp.takeHit({...m,kind:'superFinish',damage:m.confirm.damage,
+          hitstun:30,pushHit:7,launcher:-10,confirm:null},this);
+      }
+    }
+    if(m.driveVel){
+      const driving=this.moveFrame<m.startup+m.active;
+      if(m.slide && driving && !this.skill.slideStopped && opp){
+        const gap=(opp.x-this.x)*this.face-52;
+        if(Math.abs(this.y-opp.y)<150 && gap<=m.driveVel){
+          this.vx=Math.max(0,gap)*this.face/PHYS.friction; this.skill.slideStopped=true;
+        }else this.vx=this.face*m.driveVel;
+      }else this.vx=driving && !this.skill.slideStopped?this.face*m.driveVel:0;
+    }
+  }
+
   /* ---- per-frame update ---- */
   update(mask, opp){
     this.stateFrame++;
@@ -963,7 +1037,8 @@ class Fighter{
     }
     if(this.onGround && this.state!=='airstun') this.gravMul=1;
 
-    this.buf.push(mask, this.face, false);
+    this.buf.push(mask, this.face, false, this);
+    this.buf.completed=this.buf.completed.filter(command=>Skills.validRequest(this,command));
 
     if(this.state==='ko' || this.state==='win' || this.state==='frozen'){
       this.buf.clearPending();
@@ -985,6 +1060,7 @@ class Fighter{
     if(this.move){
       this.moveFrame++;
       const m=this.move, total=m.startup+m.active+m.recovery;
+      if(m.skillArt) this.advanceSkill(opp);
       if(m.multiHit && this.multiTick>0) this.multiTick--;
       if(this.onGround && !m.driveVel) this.vx *= 0.6;
       if(m.projectile && this.moveFrame===m.startup) Projectiles.spawn(this);
@@ -993,16 +1069,24 @@ class Fighter{
          its ACTIVE or RECOVERY frames into a listed follow-up.        */
       if(this.canCancel && !this.cancelUsed && m.cancelInto.length &&
          this.moveFrame >= m.startup){
-        const sp = this.onGround ? this.buf.detectSpecial(m.cancelInto) : null;
-        if(sp){
+        const allowed=m.special?m.cancelInto:[...m.cancelInto,'super'];
+        const sp = this.onGround ? this.specialRequest(allowed) : null;
+        if(sp && this.startMove(sp.move,true)){
           this.buf.consumeAttacks();
-          this.startMove(sp.move,true);
           this.applyPhysics(opp); this.advanceAnim(); return;
         }
         // normal-into-normal chain (punch → kick)
         if(m.cancelInto.includes('kick') && this.buf.avail('kick')){
           this.buf.consumeAttacks();
           this.startMove('kick',true);
+          this.applyPhysics(opp); this.advanceAnim(); return;
+        }
+      }
+
+      if(m.followWindow && this.skill.contact && Skills.inWindow(this,'followWindow')){
+        const follow=this.specialRequest(['spinKick']);
+        if(follow?.move==='chatgptClawFollow' && this.startMove(follow.move,true)){
+          this.buf.consumeAttacks();
           this.applyPhysics(opp); this.advanceAnim(); return;
         }
       }
@@ -1021,10 +1105,9 @@ class Fighter{
     const down = (held&BTN.DOWN)!==0;
     const dir  = ((held&BTN.RIGHT)?1:0) - ((held&BTN.LEFT)?1:0);
 
-    const sp = this.onGround ? this.buf.detectSpecial() : null;
-    if(sp){
+    const sp = this.onGround ? this.specialRequest() : null;
+    if(sp && sp.move!=='chatgptClawFollow' && this.startMove(sp.move,false)){
       this.buf.consumeAttacks(); this.buf.consume('up');
-      this.startMove(sp.move,false);
       this.applyPhysics(opp); this.advanceAnim(); return;
     }
 
@@ -1318,21 +1401,29 @@ const Juice = {
 };
 
 /* --------------- projectiles (pooled, deterministic) ---------------- */
+const EFFECT_FADE_FRAMES=8;
 const Projectiles = (()=>{
   const MAXP=8;
   const list=new Array(MAXP);
-  for(let i=0;i<MAXP;i++) list[i]={active:false,x:0,y:0,vx:0,owner:0,life:0,anim:0};
+  const empty=()=>({active:false,x:0,y:0,vx:0,owner:0,life:0,anim:0,
+    attack:null,character:null,row:0,reflections:0,size:20,impactAge:-1});
+  for(let i=0;i<MAXP;i++) list[i]=empty();
   const DATA={ damage:10, chip:2, hitstun:24, blockstun:12, pushHit:7, pushBlock:4.5,
                height:'mid', weight:'light', sfx:'boom', meter:5, key:'fireballShot',
-               cancelInto:[], multiHit:0, selfPush:0 };
+               cancelInto:[], multiHit:0, selfPush:0, kind:'projectile', reflectable:true };
   return {
     DATA, list,
     spawn(f){
+      const data=f.move?.projectileData;
+      if(data && list.some(p=>p.active && p.owner===f.idx)) return null;
       for(let i=0;i<MAXP;i++){
         const p=list[i];
-        if(!p.active){
+        if(!p.active && p.impactAge<0){
+          Object.assign(p,empty());
           p.active=true; p.owner=f.idx; p.x=f.x+f.face*54; p.y=f.y-98;
-          p.vx=f.face*8.6; p.life=150; p.anim=0;
+          p.vx=f.face*(data?.speed || 8.6); p.life=data?.life || 150; p.anim=0;
+          p.size=data?.size || 20; p.attack={...DATA,damage:data?.damage ?? DATA.damage};
+          if(data){ p.character=f.character; p.row=f.move.skillArt.row; }
           Audio5.play('fire',0.7,1); return p;
         }
       }
@@ -1340,19 +1431,33 @@ const Projectiles = (()=>{
     },
     update(fighters){
       for(let i=0;i<MAXP;i++){
-        const p=list[i]; if(!p.active) continue;
+        const p=list[i];
+        if(!p.active){
+          if(p.impactAge>=0 && ++p.impactAge>=EFFECT_FADE_FRAMES) p.impactAge=-1;
+          continue;
+        }
         p.x+=p.vx; p.anim++;
         if(p.anim%2===0){
           FX.pool && FX.trail && 0;
         }
         if(p.x<WALL_L-40||p.x>WALL_R+40||--p.life<=0){ p.active=false; continue; }
         const foe=fighters[1-p.owner], me=fighters[p.owner];
+        const box={x:p.x-p.size,y:p.y-p.size,w:p.size*2,h:p.size*2};
+        const wing={x:foe.x+(foe.face>0?0:-110),y:foe.y-180,w:110,h:156};
+        if(p.attack.kind==='projectile' && p.attack.reflectable && !p.reflections && !foe.skill.reflectionUsed &&
+           Skills.inWindow(foe,'reflect') && p.vx*foe.face<0 && aabb(box,wing)){
+          p.reflections++; foe.skill.reflectionUsed=true;
+          p.owner=foe.idx; p.vx=-p.vx;
+          p.attack={...p.attack,damage:Math.min(12,p.attack.damage)};
+          p.character=foe.character; p.row=1;
+          continue;
+        }
         if(foe.invuln>0) continue;
-        const box={x:p.x-20,y:p.y-20,w:40,h:40};
         for(const hu of foe.hurtboxes()){
           if(aabb(box,hu)){
-            foe.takeHit(DATA, me);
+            const result=foe.takeHit(p.attack,me,Math.sign(p.vx));
             p.active=false;
+            if(result==='hit' || result==='block') p.impactAge=0;
             Audio5.play('boom',0.8);
             break;
           }
@@ -1361,7 +1466,7 @@ const Projectiles = (()=>{
     },
     draw(g,frame){
       for(let i=0;i<list.length;i++){
-        const p=list[i]; if(!p.active) continue;
+        const p=list[i]; if(!p.active || p.character) continue;
         const t=p.anim*0.35;
         const r=17+Math.sin(t)*2.5;
         const grd=g.createRadialGradient(p.x,p.y,2,p.x,p.y,r*1.6);
@@ -1374,7 +1479,7 @@ const Projectiles = (()=>{
         g.beginPath(); g.ellipse(p.x-Math.sign(p.vx)*r*0.5,p.y,r*0.45,r*0.3,0,0,6.2832); g.fill();
       }
     },
-    clear(){ for(const p of list) p.active=false; }
+    clear(){ for(const p of list) Object.assign(p,empty()); }
   };
 })();
 
@@ -1455,12 +1560,14 @@ function startRound(){
 }
 function startMatch(seed=0x1234abc,roster=Game.roster){
   Game.roster=[...roster];
-  FIGHTERS.forEach((fighter,index)=>{fighter.name=characterById[Game.roster[index]].name;});
+  FIGHTERS.forEach((fighter,index)=>{
+    fighter.character=Game.roster[index]; fighter.name=characterById[fighter.character].name;
+  });
   clearTimeout(UI._t); UI.hide();
   clearKeys(); acc=0; last=performance.now();
   Game.paused=false; Game.winner=null;
   P1.rounds=0; P2.rounds=0; Game.round=1; Game.frame=0;
-  for(const p of Projectiles.list) Object.assign(p,{active:false,x:0,y:0,vx:0,owner:0,life:0,anim:0});
+  Projectiles.clear();
   Rng.seed(seed);
   Audio5.music(true);
   startRound();
@@ -1512,7 +1619,9 @@ function updateFlow(){
 function endRound(winner, byKo){
   Game.winner=winner; Game.phase='ko'; Game.phaseT=0;
   Game.hitstop=18;
-  for(const fighter of FIGHTERS){ fighter.interruptMove(); fighter.buf.clearPending(true); }
+  for(const fighter of FIGHTERS){
+    fighter.interruptMove(); fighter.buf.clearPending(true); fighter.skill.trap=null;
+  }
   Projectiles.clear();
   const loser = winner==='p1'?P2:(winner==='p2'?P1:null);
   if(loser){ loser.setState('ko'); loser.vx=-loser.face*7; loser.vy=-8; loser.onGround=false; }
@@ -1531,6 +1640,19 @@ function cpuMask(me, foe){
   const dx=foe.x-me.x, adx=Math.abs(dx), toward = dx>0?BTN.RIGHT:BTN.LEFT;
   const away = dx>0?BTN.LEFT:BTN.RIGHT;
   me.aiTimer--;
+
+  if(me.meter>=100 && adx<180 && !me.move && Rng.next()<0.12) return BTN.SUPER;
+  if(me.skill.trap?.phase==='armed' && Math.abs(foe.x-me.skill.trap.x)<105 &&
+     !me.move && Rng.next()<0.12) return BTN.SPIN;
+  if(me.move?.followWindow && me.skill.contact && Rng.next()<0.35) return BTN.SPIN;
+  if(!foe.onGround && adx<150 && Rng.next()<0.25) return BTN.UPPERCUT;
+  if(Projectiles.list.some(p=>p.active && p.owner!==me.idx && Math.abs(p.x-me.x)<175) &&
+     me.character==='chatgpt' && Rng.next()<0.3) return BTN.UPPERCUT;
+  if(foe.move && adx<130 && me.character==='deepseek' && Rng.next()<0.15) return BTN.UPPERCUT;
+  if(me.aiTimer<=0 && !me.move && me.onGround && Rng.next()<0.25){
+    me.aiTimer=12+Rng.int(20);
+    return adx>180?BTN.FIREBALL:Rng.next()<0.5?BTN.SPIN:BTN.UPPERCUT;
+  }
 
   if(foe.move && adx<160 && Rng.next()<0.25){
     mask|=BTN.BLOCK;
@@ -1568,15 +1690,85 @@ function cpuMask(me, foe){
 /* --------------------- 3.2 collision resolution --------------------- */
 function resolveCombat(a,b){
   const hb=a.hitbox(); if(!hb) return;
+  if(a.move.airOnly && b.onGround) return;
   for(const hu of b.hurtboxes()){
     if(aabb(hb,hu)){
       const m=a.move;
       if(m.multiHit){ a.multiTick = Math.max(2, Math.floor(m.active/m.multiHit)); a.hitTargets++; }
       else a.hasHit=true;
-      b.takeHit(m,a);
+      const result=b.takeHit(m,a);
+      if(a.move===m && (result==='hit' || result==='block')){
+        a.skill.contact=result;
+        if(m.confirm && result==='hit'){
+          a.skill.superConfirm={target:b.idx,age:0,finished:false};
+        }
+      }
       return;
     }
   }
+}
+
+function updateTraps(){
+  for(const owner of FIGHTERS){
+    const trap=owner.skill.trap; if(!trap) continue;
+    if(trap.phase!=='fade' && --trap.life<=0){ owner.skill.trap=null; continue; }
+    trap.age++;
+    if(trap.phase==='fade'){
+      if(trap.age>=EFFECT_FADE_FRAMES) owner.skill.trap=null;
+      continue;
+    }
+    if(trap.phase==='warning' && trap.age>=Skills.TRAP.warning){ trap.phase='burst'; trap.age=0; }
+    if(trap.phase!=='burst') continue;
+    if(trap.age>=Skills.TRAP.active){ trap.phase='fade'; trap.age=0; continue; }
+    if(trap.hit) continue;
+    const foe=FIGHTERS[1-owner.idx];
+    const box={x:trap.x-Skills.TRAP.width/2,y:trap.y-Skills.TRAP.height,
+      w:Skills.TRAP.width,h:Skills.TRAP.height};
+    if(foe.hurtboxes().some(hurt=>aabb(box,hurt))){
+      const result=foe.takeHit(Skills.TRAP.attack,owner,trap.face);
+      if(result==='hit' || result==='block') trap.hit=true;
+    }
+  }
+}
+
+function worldEffects(){
+  const effects=[];
+  for(const fighter of FIGHTERS){
+    const m=fighter.move, skill=fighter.skill;
+    const common={character:fighter.character,x:fighter.x,y:fighter.y,face:fighter.face};
+    const confirm=skill.superConfirm;
+    if(confirm && m?.confirm && confirm.age<m.confirm.duration){
+      const target=FIGHTERS[confirm.target];
+      effects.push({...common,row:3,columns:confirm.finished?[2,3]:[1],
+        age:confirm.finished?confirm.age-m.confirm.delay:confirm.age,
+        duration:confirm.finished?m.confirm.duration-m.confirm.delay:m.confirm.delay,
+        x:target.x,y:target.y-110,width:250,height:250});
+    }else if(m?.skillArt && !m.confirm && !m.trap && m.box &&
+             (!m.slide || skill.slideStopped) &&
+             fighter.moveFrame>=m.startup && fighter.moveFrame<m.startup+m.active){
+      effects.push({...common,row:m.skillArt.row,columns:[2],age:fighter.moveFrame-m.startup,
+        duration:m.active,x:fighter.x+fighter.face*(m.box.x+m.box.w/2),
+        y:fighter.y+m.box.y+m.box.h/2,width:m.box.w,height:m.box.h});
+    }
+    const trap=skill.trap;
+    if(trap){
+      const fade=trap.phase==='fade', burst=trap.phase==='burst', warn=trap.phase==='warning';
+      const height=burst||fade?Skills.TRAP.height:warn?90:32;
+      effects.push({...common,row:2,x:trap.x,y:trap.y-height/2,face:trap.face,age:trap.age,
+        columns:[fade?3:burst?2:warn?1:0],
+        duration:fade?EFFECT_FADE_FRAMES:burst?Skills.TRAP.active:warn?Skills.TRAP.warning:Skills.TRAP.life,
+        width:burst||fade?Skills.TRAP.width:warn?46:26,height,
+        opacity:fade?1-trap.age/EFFECT_FADE_FRAMES:burst?1:warn?0.55+0.35*(trap.age%6)/5:0.65});
+    }
+  }
+  for(const projectile of Projectiles.list){
+    if(!projectile.character || !projectile.active && projectile.impactAge<0) continue;
+    effects.push({character:projectile.character,row:projectile.row,
+      columns:projectile.active?[1]:[2,3],age:projectile.active?projectile.anim:projectile.impactAge,
+      duration:projectile.active?projectile.anim+projectile.life:EFFECT_FADE_FRAMES,x:projectile.x,y:projectile.y,
+      face:Math.sign(projectile.vx),width:projectile.size*3,height:projectile.size*2});
+  }
+  return effects;
 }
 
 /* --------- the pure simulation step: inputs in, state out ----------- */
@@ -1588,15 +1780,15 @@ function simulate(maskA, maskB){
        buffer — cancels and specials are routinely input during hitstop,
        and dropping those frames would eat the player's motion. */
     Game.hitstop--;
-    P1.buf.push(Game.phase==='fight'?maskA:0, P1.face, true);
-    P2.buf.push(Game.phase==='fight'?maskB:0, P2.face, true);
+    P1.buf.push(Game.phase==='fight'?maskA:0, P1.face, true, P1);
+    P2.buf.push(Game.phase==='fight'?maskB:0, P2.face, true, P2);
     return;
   }
   const live=(Game.phase==='fight');
   P1.update(live?maskA:0, P2);
   P2.update(live?maskB:0, P1);
   if(live){ resolveCombat(P1,P2); resolveCombat(P2,P1); }
-  if(live) Projectiles.update(FIGHTERS);
+  if(live){ Projectiles.update(FIGHTERS); updateTraps(); }
 }
 
 function deterministicHash(){
@@ -1626,6 +1818,7 @@ const Net=createSession({
   selection:()=>selection.local,
   reset(seed,roster){ Game.cpu=false; startMatch(seed,roster); },
   step(a,b){
+    lastStepFrozen=Game.hitstop>0;
     const t0=performance.now(); simulate(a,b); updatePresentation();
     DEBUG.stepMs=performance.now()-t0;
   },
@@ -1635,7 +1828,7 @@ const Net=createSession({
 }, ({state,role,message})=>{
   document.getElementById('netstat').textContent=message;
   document.getElementById('netstatus').textContent=state==='idle'?'':
-    (role==='host'?'本机 P1':role==='guest'?'本机 P2':'联机')+' · WASD 移动 / JKL 拳踢防 · '+message;
+    (role==='host'?'本机 P1':role==='guest'?'本机 P2':'联机')+' · WASD / JKL / UIO / N · '+message;
   if(state==='handshake'){
     resumeLocalOnCancel=false;
     document.getElementById('boot')?.remove();
@@ -1708,7 +1901,7 @@ function drawFighter(g,f){
   g.scale(f.face,1);
   if(f.flash>0) g.filter='brightness(2.4) saturate(0.4)';
   else if(f.invuln>0 && (Game.frame>>1)%2===0) g.filter='brightness(1.6) hue-rotate(70deg)';
-  Sprites.draw(g,f,Game.roster[f.idx]);
+  if(!SkillSprites.draw(g,f,Game.roster[f.idx],renderAlpha)) Sprites.draw(g,f,Game.roster[f.idx]);
   g.filter='none';
   g.restore();
 }
@@ -1764,6 +1957,10 @@ function render(){
   const order = P1.y<=P2.y ? [P1,P2] : [P2,P1];
   for(const f of order) drawFighter(g,f);
   Projectiles.draw(g,Game.frame);
+  for(const effect of worldEffects()){
+    g.save(); g.globalAlpha=effect.opacity ?? 1;
+    SkillSprites.drawEffect(g,effect); g.restore();
+  }
   FX.draw(g);
   if(DEBUG.boxes){ drawBoxes(g,P1); drawBoxes(g,P2); }
   g.restore();
@@ -1808,6 +2005,7 @@ function updateDiag(dt){
 /* ====================== PHASE 1.2 — GAME LOOP ======================= */
 const STEP = 1000/60;
 let acc=0, last=performance.now(), fpsAcc=0, fpsN=0;
+let renderAlpha=0, lastAdvancedAt=0;
 
 function localMask(){
   return LiveInput[0].take();
@@ -1815,6 +2013,7 @@ function localMask(){
 
 function stepLocal(){
   if(Game.paused) return;
+  lastStepFrozen=Game.hitstop>0;
   const t0=performance.now();
   const a = localMask();
   const b = Game.cpu ? cpuMask(P2,P1) : LiveInput[1].take();
@@ -1829,10 +2028,11 @@ function frame(now){
   fpsAcc+=dt; fpsN++;
   if(fpsAcc>=500){ DEBUG.fps=1000/(fpsAcc/fpsN); fpsAcc=0; fpsN=0; }
 
+  const previousFrame=Game.frame;
   if(Net.state!=='idle'){
     acc=0;
     Net.tick(now,()=>localMask(),document.hidden);
-  }else if(Game.phase!=='boot' && !document.hidden && !document.getElementById('boot')){
+  }else if(Game.phase!=='boot' && !Game.paused && !document.hidden && !document.getElementById('boot')){
     acc += dt*(1-Game.slowmo*0.72);
     let guard=0;
     while(acc>=STEP && guard<5){
@@ -1840,6 +2040,11 @@ function frame(now){
     }
     if(guard>=5) acc=0;
   }else acc=0;
+  if(Game.frame!==previousFrame) lastAdvancedAt=now;
+  const advancing=Game.phase!=='boot' && !Game.paused && !Game.hitstop && !lastStepFrozen && !document.hidden &&
+    !document.getElementById('boot') && (Net.state==='idle' || Net.state==='playing');
+  renderAlpha=advancing?(Net.state==='idle'?clamp(acc/STEP,0,1):
+    lastAdvancedAt?clamp((now-lastAdvancedAt)/STEP,0,1):0):0;
   UI.sync();
   render();
   updateDiag(dt);
@@ -1887,6 +2092,14 @@ function syncCharacterPickers(){
   });
   const start=document.getElementById('start');
   if(start) start.disabled=locked;
+  const help=document.getElementById('skill-help');
+  if(help){
+    const skills=Skills.SKILLS[selection.local];
+    help.textContent=['U '+skills.fireball.name,'I '+skills.uppercut.name,
+      'O '+skills.spinKick.name,'N '+skills.super.name].join(' · ')+
+      (selection.local==='claude'?'。O 放置后，再按 O 引爆。':
+       selection.local==='chatgpt'?'。O 接触对手后，再按 O 追击。':'。I 反击正面的中、上段近战。');
+  }
 }
 document.querySelectorAll('[data-picker]').forEach(picker=>{
   for(const character of CHARACTERS){
@@ -2037,10 +2250,11 @@ async function boot(){
     if(!audit.ok){
       throw new Error('fighter config failed integrity audit:\n'+audit.violations.join('\n'));
     }
-    CONFIG_FINGERPRINT = configFingerprint({fighter:loader.assets.fighter,
+    CONFIG_FINGERPRINT = configFingerprint({fighter:loader.assets.fighter,skills:Skills.SKILLS,trap:Skills.TRAP,
       rules:loader.assets.rules,stage:loader.assets.stage});
     const sources=await Promise.all(['index.html','shared/netplay.js','shared/lockstep.js',
       'shared/input.js','shared/rooms.js','shared/vendor/peerjs.min.js','shared/configLoader.js','shared/integrity.js','shared/sprites.js','shared/characters.js',
+      'shared/skills.js','shared/skillSprites.js',...SKILL_ASSETS,
       'assets/fighters/ai.json',...CHARACTERS.map(character=>character.image)].map(async path=>{
       const response=await fetch(new URL(path,location.href),{cache:'no-store'});
       if(!response.ok) throw new Error('无法读取构建指纹 '+path);
@@ -2064,7 +2278,7 @@ async function boot(){
         preview.style.backgroundPosition=(x/(image.naturalWidth-w)*100)+'% '+(y/(image.naturalHeight-h)*100)+'%';
       });
       return true; });
-    await loader.runStep('atlas.p2', ()=>true);
+    await loader.runStep('atlas.p2', async()=>{ SkillSprites=await loadSkillSprites(); return true; });
     await loader.runStep('stage.bg', ()=>{ buildBackground(); return true; });
     await loader.runStep('audio.sfx',()=>true);          // buffers render on user gesture
     await loader.runStep('audio.bgm',()=>true);
@@ -2074,6 +2288,12 @@ async function boot(){
     window.NEON = {
       Game, P1, P2, MOVES, PHYS, MOTIONS, SCALING, HURT, RULES, STAGE, Rooms,
       FX, Cam, Net, DEBUG, Projectiles, snapshot,
+      BTN, SKILLS:Skills.SKILLS, simulate, resolveCombat, startMatch, deterministicHash, worldEffects,
+      skillSprites:Object.freeze({frame:(side,alpha=0)=>{
+        if(side!=='p1' && side!=='p2') throw new RangeError('Unknown fighter side '+side);
+        const fighter=side==='p1'?P1:P2;
+        return SkillSprites.frame(fighter,fighter.character,alpha);
+      }}),
       sprites:Object.freeze({frame:side=>{
         if(side!=='p1' && side!=='p2') throw new RangeError('Unknown fighter side '+side);
         const fighter=side==='p1'?P1:P2;
@@ -2086,6 +2306,7 @@ async function boot(){
       get inputDelay(){ return INPUT_DELAY; },
       get world(){ return {VW,VH,FLOOR,WALL_L,WALL_R}; },
       get build(){ return BUILD_FINGERPRINT; },
+      get renderAlpha(){ return renderAlpha; },
     };
     setP(1,'ready');
     document.getElementById('loading').classList.add('done');

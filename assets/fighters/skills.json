@@ -1,0 +1,2977 @@
+{
+  "version": 1,
+  "noiseAlphaMax": 8,
+  "cropPolicy": "alpha>8 bounds inside measured gutters; gutters <=24; no PNG edits",
+  "characters": {
+    "deepseek": {
+      "actions": {
+        "image": "assets/fighters/skills/deepseek-actions.png",
+        "width": 1254,
+        "height": 1254,
+        "sha256": "aa93d7c0f73f461f3e23fc55a34d3a746bb3b0e1512f1227db884ea99b169c8c",
+        "scale": 0.7350545832611333,
+        "referenceHeight": 170.53266331658293,
+        "standingHeight": 232,
+        "cellSize": [
+          313.5,
+          313.5
+        ],
+        "horizontalGutterAlpha": [
+          1,
+          1,
+          1
+        ],
+        "bands": [
+          {
+            "y": [
+              0,
+              314
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "y": [
+              314,
+              627
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              2,
+              1,
+              1
+            ]
+          },
+          {
+            "y": [
+              627,
+              940
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "y": [
+              940,
+              1254
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          }
+        ],
+        "frames": [
+          {
+            "name": "deepseek-actions-0-0",
+            "row": 0,
+            "column": 0,
+            "rect": [
+              55,
+              47,
+              168,
+              236
+            ],
+            "origin": [
+              103,
+              233
+            ],
+            "anchor": [
+              158,
+              280
+            ],
+            "silhouette": [
+              56,
+              48,
+              222,
+              282
+            ]
+          },
+          {
+            "name": "deepseek-actions-0-1",
+            "row": 0,
+            "column": 1,
+            "rect": [
+              355,
+              51,
+              203,
+              231
+            ],
+            "origin": [
+              114,
+              228
+            ],
+            "anchor": [
+              469,
+              279
+            ],
+            "silhouette": [
+              356,
+              52,
+              557,
+              281
+            ]
+          },
+          {
+            "name": "deepseek-actions-0-2",
+            "row": 0,
+            "column": 2,
+            "rect": [
+              662,
+              82,
+              243,
+              200
+            ],
+            "origin": [
+              72,
+              198
+            ],
+            "anchor": [
+              734,
+              280
+            ],
+            "silhouette": [
+              663,
+              83,
+              904,
+              281
+            ]
+          },
+          {
+            "name": "deepseek-actions-0-3",
+            "row": 0,
+            "column": 3,
+            "rect": [
+              990,
+              47,
+              175,
+              236
+            ],
+            "origin": [
+              108,
+              233
+            ],
+            "anchor": [
+              1098,
+              280
+            ],
+            "silhouette": [
+              991,
+              48,
+              1164,
+              282
+            ]
+          },
+          {
+            "name": "deepseek-actions-1-0",
+            "row": 1,
+            "column": 0,
+            "rect": [
+              53,
+              364,
+              168,
+              234
+            ],
+            "origin": [
+              105,
+              231
+            ],
+            "anchor": [
+              158,
+              595
+            ],
+            "silhouette": [
+              54,
+              365,
+              220,
+              597
+            ]
+          },
+          {
+            "name": "deepseek-actions-1-1",
+            "row": 1,
+            "column": 1,
+            "rect": [
+              356,
+              379,
+              190,
+              218
+            ],
+            "origin": [
+              143,
+              216
+            ],
+            "anchor": [
+              499,
+              595
+            ],
+            "silhouette": [
+              357,
+              380,
+              545,
+              596
+            ]
+          },
+          {
+            "name": "deepseek-actions-1-2",
+            "row": 1,
+            "column": 2,
+            "rect": [
+              668,
+              367,
+              240,
+              230
+            ],
+            "origin": [
+              102,
+              228
+            ],
+            "anchor": [
+              770,
+              595
+            ],
+            "silhouette": [
+              669,
+              368,
+              907,
+              596
+            ]
+          },
+          {
+            "name": "deepseek-actions-1-3",
+            "row": 1,
+            "column": 3,
+            "rect": [
+              1002,
+              366,
+              170,
+              231
+            ],
+            "origin": [
+              102,
+              229
+            ],
+            "anchor": [
+              1104,
+              595
+            ],
+            "silhouette": [
+              1003,
+              367,
+              1171,
+              596
+            ]
+          },
+          {
+            "name": "deepseek-actions-2-0",
+            "row": 2,
+            "column": 0,
+            "rect": [
+              52,
+              692,
+              161,
+              186
+            ],
+            "origin": [
+              96,
+              183
+            ],
+            "anchor": [
+              148,
+              875
+            ],
+            "silhouette": [
+              53,
+              693,
+              212,
+              877
+            ]
+          },
+          {
+            "name": "deepseek-actions-2-1",
+            "row": 2,
+            "column": 1,
+            "rect": [
+              330,
+              709,
+              226,
+              168
+            ],
+            "origin": [
+              116,
+              165
+            ],
+            "anchor": [
+              446,
+              874
+            ],
+            "silhouette": [
+              331,
+              710,
+              555,
+              876
+            ]
+          },
+          {
+            "name": "deepseek-actions-2-2",
+            "row": 2,
+            "column": 2,
+            "rect": [
+              656,
+              701,
+              228,
+              177
+            ],
+            "origin": [
+              122,
+              174
+            ],
+            "anchor": [
+              778,
+              875
+            ],
+            "silhouette": [
+              657,
+              702,
+              883,
+              877
+            ]
+          },
+          {
+            "name": "deepseek-actions-2-3",
+            "row": 2,
+            "column": 3,
+            "rect": [
+              988,
+              670,
+              174,
+              209
+            ],
+            "origin": [
+              109,
+              206
+            ],
+            "anchor": [
+              1097,
+              876
+            ],
+            "silhouette": [
+              989,
+              671,
+              1161,
+              878
+            ]
+          },
+          {
+            "name": "deepseek-actions-3-0",
+            "row": 3,
+            "column": 0,
+            "rect": [
+              50,
+              978,
+              197,
+              227
+            ],
+            "origin": [
+              115,
+              225
+            ],
+            "anchor": [
+              165,
+              1203
+            ],
+            "silhouette": [
+              51,
+              979,
+              246,
+              1204
+            ]
+          },
+          {
+            "name": "deepseek-actions-3-1",
+            "row": 3,
+            "column": 1,
+            "rect": [
+              352,
+              970,
+              199,
+              234
+            ],
+            "origin": [
+              126,
+              232
+            ],
+            "anchor": [
+              478,
+              1202
+            ],
+            "silhouette": [
+              353,
+              971,
+              550,
+              1203
+            ]
+          },
+          {
+            "name": "deepseek-actions-3-2",
+            "row": 3,
+            "column": 2,
+            "rect": [
+              669,
+              994,
+              225,
+              210
+            ],
+            "origin": [
+              106,
+              207
+            ],
+            "anchor": [
+              775,
+              1201
+            ],
+            "silhouette": [
+              670,
+              995,
+              893,
+              1203
+            ]
+          },
+          {
+            "name": "deepseek-actions-3-3",
+            "row": 3,
+            "column": 3,
+            "rect": [
+              990,
+              967,
+              190,
+              237
+            ],
+            "origin": [
+              111,
+              235
+            ],
+            "anchor": [
+              1101,
+              1202
+            ],
+            "silhouette": [
+              991,
+              968,
+              1179,
+              1203
+            ]
+          }
+        ]
+      },
+      "effects": {
+        "image": "assets/fighters/skills/deepseek-effects.png",
+        "width": 1254,
+        "height": 1254,
+        "sha256": "178ec384cf11c5e2841d2a5df099e0ec480bcf5b60a04ebc27a5829e79cdf229",
+        "scale": 1,
+        "referenceHeight": 170.53266331658293,
+        "standingHeight": 108.75,
+        "cellSize": [
+          313.5,
+          313.5
+        ],
+        "horizontalGutterAlpha": [
+          1,
+          2,
+          2
+        ],
+        "bands": [
+          {
+            "y": [
+              0,
+              314
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "y": [
+              314,
+              627
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              2,
+              1,
+              2
+            ]
+          },
+          {
+            "y": [
+              627,
+              940
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              2,
+              1,
+              1
+            ]
+          },
+          {
+            "y": [
+              940,
+              1254
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              2,
+              1,
+              1
+            ]
+          }
+        ],
+        "frames": [
+          {
+            "name": "deepseek-effects-0-0",
+            "row": 0,
+            "column": 0,
+            "rect": [
+              55,
+              222,
+              173,
+              66
+            ],
+            "origin": [
+              101.75,
+              -65.25
+            ],
+            "anchor": [
+              156.75,
+              156.75
+            ],
+            "silhouette": [
+              56,
+              223,
+              227,
+              287
+            ]
+          },
+          {
+            "name": "deepseek-effects-0-1",
+            "row": 0,
+            "column": 1,
+            "rect": [
+              328,
+              163,
+              264,
+              124
+            ],
+            "origin": [
+              142.25,
+              -6.25
+            ],
+            "anchor": [
+              470.25,
+              156.75
+            ],
+            "silhouette": [
+              329,
+              164,
+              591,
+              286
+            ]
+          },
+          {
+            "name": "deepseek-effects-0-2",
+            "row": 0,
+            "column": 2,
+            "rect": [
+              642,
+              84,
+              292,
+              204
+            ],
+            "origin": [
+              141.75,
+              72.75
+            ],
+            "anchor": [
+              783.75,
+              156.75
+            ],
+            "silhouette": [
+              643,
+              85,
+              933,
+              287
+            ]
+          },
+          {
+            "name": "deepseek-effects-0-3",
+            "row": 0,
+            "column": 3,
+            "rect": [
+              971,
+              171,
+              246,
+              115
+            ],
+            "origin": [
+              126.25,
+              -14.25
+            ],
+            "anchor": [
+              1097.25,
+              156.75
+            ],
+            "silhouette": [
+              972,
+              172,
+              1216,
+              285
+            ]
+          },
+          {
+            "name": "deepseek-effects-1-0",
+            "row": 1,
+            "column": 0,
+            "rect": [
+              83,
+              419,
+              161,
+              128
+            ],
+            "origin": [
+              73.75,
+              51.25
+            ],
+            "anchor": [
+              156.75,
+              470.25
+            ],
+            "silhouette": [
+              84,
+              420,
+              243,
+              546
+            ]
+          },
+          {
+            "name": "deepseek-effects-1-1",
+            "row": 1,
+            "column": 1,
+            "rect": [
+              379,
+              411,
+              205,
+              145
+            ],
+            "origin": [
+              91.25,
+              59.25
+            ],
+            "anchor": [
+              470.25,
+              470.25
+            ],
+            "silhouette": [
+              380,
+              412,
+              583,
+              555
+            ]
+          },
+          {
+            "name": "deepseek-effects-1-2",
+            "row": 1,
+            "column": 2,
+            "rect": [
+              659,
+              389,
+              265,
+              168
+            ],
+            "origin": [
+              124.75,
+              81.25
+            ],
+            "anchor": [
+              783.75,
+              470.25
+            ],
+            "silhouette": [
+              660,
+              390,
+              923,
+              556
+            ]
+          },
+          {
+            "name": "deepseek-effects-1-3",
+            "row": 1,
+            "column": 3,
+            "rect": [
+              1005,
+              431,
+              197,
+              118
+            ],
+            "origin": [
+              92.25,
+              39.25
+            ],
+            "anchor": [
+              1097.25,
+              470.25
+            ],
+            "silhouette": [
+              1006,
+              432,
+              1201,
+              548
+            ]
+          },
+          {
+            "name": "deepseek-effects-2-0",
+            "row": 2,
+            "column": 0,
+            "rect": [
+              49,
+              839,
+              121,
+              61
+            ],
+            "origin": [
+              107.75,
+              -55.25
+            ],
+            "anchor": [
+              156.75,
+              783.75
+            ],
+            "silhouette": [
+              50,
+              840,
+              169,
+              899
+            ]
+          },
+          {
+            "name": "deepseek-effects-2-1",
+            "row": 2,
+            "column": 1,
+            "rect": [
+              322,
+              838,
+              294,
+              61
+            ],
+            "origin": [
+              148.25,
+              -54.25
+            ],
+            "anchor": [
+              470.25,
+              783.75
+            ],
+            "silhouette": [
+              323,
+              839,
+              615,
+              898
+            ]
+          },
+          {
+            "name": "deepseek-effects-2-2",
+            "row": 2,
+            "column": 2,
+            "rect": [
+              648,
+              770,
+              285,
+              131
+            ],
+            "origin": [
+              135.75,
+              13.75
+            ],
+            "anchor": [
+              783.75,
+              783.75
+            ],
+            "silhouette": [
+              649,
+              771,
+              932,
+              900
+            ]
+          },
+          {
+            "name": "deepseek-effects-2-3",
+            "row": 2,
+            "column": 3,
+            "rect": [
+              973,
+              851,
+              241,
+              48
+            ],
+            "origin": [
+              124.25,
+              -67.25
+            ],
+            "anchor": [
+              1097.25,
+              783.75
+            ],
+            "silhouette": [
+              974,
+              852,
+              1213,
+              898
+            ]
+          },
+          {
+            "name": "deepseek-effects-3-0",
+            "row": 3,
+            "column": 0,
+            "rect": [
+              28,
+              1004,
+              228,
+              204
+            ],
+            "origin": [
+              128.75,
+              93.25
+            ],
+            "anchor": [
+              156.75,
+              1097.25
+            ],
+            "silhouette": [
+              29,
+              1005,
+              255,
+              1207
+            ]
+          },
+          {
+            "name": "deepseek-effects-3-1",
+            "row": 3,
+            "column": 1,
+            "rect": [
+              319,
+              963,
+              294,
+              244
+            ],
+            "origin": [
+              151.25,
+              134.25
+            ],
+            "anchor": [
+              470.25,
+              1097.25
+            ],
+            "silhouette": [
+              320,
+              964,
+              612,
+              1206
+            ]
+          },
+          {
+            "name": "deepseek-effects-3-2",
+            "row": 3,
+            "column": 2,
+            "rect": [
+              637,
+              966,
+              297,
+              250
+            ],
+            "origin": [
+              146.75,
+              131.25
+            ],
+            "anchor": [
+              783.75,
+              1097.25
+            ],
+            "silhouette": [
+              638,
+              967,
+              933,
+              1215
+            ]
+          },
+          {
+            "name": "deepseek-effects-3-3",
+            "row": 3,
+            "column": 3,
+            "rect": [
+              965,
+              1053,
+              259,
+              158
+            ],
+            "origin": [
+              132.25,
+              44.25
+            ],
+            "anchor": [
+              1097.25,
+              1097.25
+            ],
+            "silhouette": [
+              966,
+              1054,
+              1223,
+              1210
+            ]
+          }
+        ]
+      }
+    },
+    "claude": {
+      "actions": {
+        "image": "assets/fighters/skills/claude-actions.png",
+        "width": 1254,
+        "height": 1254,
+        "sha256": "5a6b28923012a00da8c6119864e5e9b7d92c048a2ac3f9b4b517cc4bfd0c6439",
+        "scale": 0.5739344666173933,
+        "referenceHeight": 170.45853658536583,
+        "standingHeight": 297,
+        "cellSize": [
+          313.5,
+          313.5
+        ],
+        "horizontalGutterAlpha": [
+          2,
+          3,
+          2
+        ],
+        "bands": [
+          {
+            "y": [
+              0,
+              314
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "y": [
+              314,
+              627
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "y": [
+              627,
+              940
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "y": [
+              940,
+              1254
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          }
+        ],
+        "frames": [
+          {
+            "name": "claude-actions-0-0",
+            "row": 0,
+            "column": 0,
+            "rect": [
+              64,
+              7,
+              191,
+              301
+            ],
+            "origin": [
+              107,
+              298
+            ],
+            "anchor": [
+              171,
+              305
+            ],
+            "silhouette": [
+              65,
+              8,
+              254,
+              307
+            ]
+          },
+          {
+            "name": "claude-actions-0-1",
+            "row": 0,
+            "column": 1,
+            "rect": [
+              356,
+              7,
+              200,
+              301
+            ],
+            "origin": [
+              128,
+              298
+            ],
+            "anchor": [
+              484,
+              305
+            ],
+            "silhouette": [
+              357,
+              8,
+              555,
+              307
+            ]
+          },
+          {
+            "name": "claude-actions-0-2",
+            "row": 0,
+            "column": 2,
+            "rect": [
+              654,
+              7,
+              261,
+              301
+            ],
+            "origin": [
+              141,
+              299
+            ],
+            "anchor": [
+              795,
+              306
+            ],
+            "silhouette": [
+              655,
+              8,
+              914,
+              307
+            ]
+          },
+          {
+            "name": "claude-actions-0-3",
+            "row": 0,
+            "column": 3,
+            "rect": [
+              994,
+              7,
+              203,
+              301
+            ],
+            "origin": [
+              119,
+              298
+            ],
+            "anchor": [
+              1113,
+              305
+            ],
+            "silhouette": [
+              995,
+              8,
+              1196,
+              307
+            ]
+          },
+          {
+            "name": "claude-actions-1-0",
+            "row": 1,
+            "column": 0,
+            "rect": [
+              65,
+              321,
+              184,
+              300
+            ],
+            "origin": [
+              108,
+              298
+            ],
+            "anchor": [
+              173,
+              619
+            ],
+            "silhouette": [
+              66,
+              322,
+              248,
+              620
+            ]
+          },
+          {
+            "name": "claude-actions-1-1",
+            "row": 1,
+            "column": 1,
+            "rect": [
+              359,
+              321,
+              200,
+              300
+            ],
+            "origin": [
+              128,
+              298
+            ],
+            "anchor": [
+              487,
+              619
+            ],
+            "silhouette": [
+              360,
+              322,
+              558,
+              620
+            ]
+          },
+          {
+            "name": "claude-actions-1-2",
+            "row": 1,
+            "column": 2,
+            "rect": [
+              648,
+              323,
+              259,
+              298
+            ],
+            "origin": [
+              146,
+              296
+            ],
+            "anchor": [
+              794,
+              619
+            ],
+            "silhouette": [
+              649,
+              324,
+              906,
+              620
+            ]
+          },
+          {
+            "name": "claude-actions-1-3",
+            "row": 1,
+            "column": 3,
+            "rect": [
+              1002,
+              322,
+              193,
+              300
+            ],
+            "origin": [
+              112,
+              297
+            ],
+            "anchor": [
+              1114,
+              619
+            ],
+            "silhouette": [
+              1003,
+              323,
+              1194,
+              621
+            ]
+          },
+          {
+            "name": "claude-actions-2-0",
+            "row": 2,
+            "column": 0,
+            "rect": [
+              32,
+              699,
+              224,
+              237
+            ],
+            "origin": [
+              143,
+              234
+            ],
+            "anchor": [
+              175,
+              933
+            ],
+            "silhouette": [
+              33,
+              700,
+              255,
+              935
+            ]
+          },
+          {
+            "name": "claude-actions-2-1",
+            "row": 2,
+            "column": 1,
+            "rect": [
+              356,
+              632,
+              200,
+              302
+            ],
+            "origin": [
+              129,
+              299
+            ],
+            "anchor": [
+              485,
+              931
+            ],
+            "silhouette": [
+              357,
+              633,
+              555,
+              933
+            ]
+          },
+          {
+            "name": "claude-actions-2-2",
+            "row": 2,
+            "column": 2,
+            "rect": [
+              667,
+              633,
+              201,
+              301
+            ],
+            "origin": [
+              131,
+              299
+            ],
+            "anchor": [
+              798,
+              932
+            ],
+            "silhouette": [
+              668,
+              634,
+              867,
+              933
+            ]
+          },
+          {
+            "name": "claude-actions-2-3",
+            "row": 2,
+            "column": 3,
+            "rect": [
+              985,
+              633,
+              219,
+              301
+            ],
+            "origin": [
+              128,
+              299
+            ],
+            "anchor": [
+              1113,
+              932
+            ],
+            "silhouette": [
+              986,
+              634,
+              1203,
+              933
+            ]
+          },
+          {
+            "name": "claude-actions-3-0",
+            "row": 3,
+            "column": 0,
+            "rect": [
+              58,
+              948,
+              198,
+              300
+            ],
+            "origin": [
+              114,
+              298
+            ],
+            "anchor": [
+              172,
+              1246
+            ],
+            "silhouette": [
+              59,
+              949,
+              255,
+              1247
+            ]
+          },
+          {
+            "name": "claude-actions-3-1",
+            "row": 3,
+            "column": 1,
+            "rect": [
+              348,
+              947,
+              208,
+              301
+            ],
+            "origin": [
+              139,
+              299
+            ],
+            "anchor": [
+              487,
+              1246
+            ],
+            "silhouette": [
+              349,
+              948,
+              555,
+              1247
+            ]
+          },
+          {
+            "name": "claude-actions-3-2",
+            "row": 3,
+            "column": 2,
+            "rect": [
+              631,
+              948,
+              281,
+              300
+            ],
+            "origin": [
+              169,
+              298
+            ],
+            "anchor": [
+              800,
+              1246
+            ],
+            "silhouette": [
+              632,
+              949,
+              911,
+              1247
+            ]
+          },
+          {
+            "name": "claude-actions-3-3",
+            "row": 3,
+            "column": 3,
+            "rect": [
+              999,
+              947,
+              209,
+              301
+            ],
+            "origin": [
+              117,
+              299
+            ],
+            "anchor": [
+              1116,
+              1246
+            ],
+            "silhouette": [
+              1000,
+              948,
+              1207,
+              1247
+            ]
+          }
+        ]
+      },
+      "effects": {
+        "image": "assets/fighters/skills/claude-effects.png",
+        "width": 1254,
+        "height": 1254,
+        "sha256": "defedf12d27cf40bc7cbb900f42dd80c1944148d86c58973c36f8f050f7baea7",
+        "scale": 1,
+        "referenceHeight": 170.45853658536583,
+        "standingHeight": 148.75,
+        "cellSize": [
+          313.5,
+          313.5
+        ],
+        "horizontalGutterAlpha": [
+          7,
+          6,
+          3
+        ],
+        "bands": [
+          {
+            "y": [
+              0,
+              311
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              2,
+              3,
+              3
+            ]
+          },
+          {
+            "y": [
+              311,
+              625
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              3,
+              5,
+              6
+            ]
+          },
+          {
+            "y": [
+              625,
+              940
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              2,
+              2,
+              2
+            ]
+          },
+          {
+            "y": [
+              940,
+              1254
+            ],
+            "x": [
+              0,
+              314,
+              617,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              3,
+              15,
+              5
+            ]
+          }
+        ],
+        "frames": [
+          {
+            "name": "claude-effects-0-0",
+            "row": 0,
+            "column": 0,
+            "rect": [
+              51,
+              90,
+              193,
+              154
+            ],
+            "origin": [
+              105.75,
+              66.75
+            ],
+            "anchor": [
+              156.75,
+              156.75
+            ],
+            "silhouette": [
+              52,
+              91,
+              243,
+              243
+            ]
+          },
+          {
+            "name": "claude-effects-0-1",
+            "row": 0,
+            "column": 1,
+            "rect": [
+              334,
+              107,
+              277,
+              128
+            ],
+            "origin": [
+              136.25,
+              49.75
+            ],
+            "anchor": [
+              470.25,
+              156.75
+            ],
+            "silhouette": [
+              335,
+              108,
+              610,
+              234
+            ]
+          },
+          {
+            "name": "claude-effects-0-2",
+            "row": 0,
+            "column": 2,
+            "rect": [
+              653,
+              4,
+              278,
+              279
+            ],
+            "origin": [
+              130.75,
+              152.75
+            ],
+            "anchor": [
+              783.75,
+              156.75
+            ],
+            "silhouette": [
+              654,
+              5,
+              930,
+              282
+            ]
+          },
+          {
+            "name": "claude-effects-0-3",
+            "row": 0,
+            "column": 3,
+            "rect": [
+              996,
+              99,
+              201,
+              130
+            ],
+            "origin": [
+              101.25,
+              57.75
+            ],
+            "anchor": [
+              1097.25,
+              156.75
+            ],
+            "silhouette": [
+              997,
+              100,
+              1196,
+              228
+            ]
+          },
+          {
+            "name": "claude-effects-1-0",
+            "row": 1,
+            "column": 0,
+            "rect": [
+              65,
+              422,
+              188,
+              171
+            ],
+            "origin": [
+              91.75,
+              48.25
+            ],
+            "anchor": [
+              156.75,
+              470.25
+            ],
+            "silhouette": [
+              66,
+              423,
+              252,
+              592
+            ]
+          },
+          {
+            "name": "claude-effects-1-1",
+            "row": 1,
+            "column": 1,
+            "rect": [
+              337,
+              343,
+              267,
+              239
+            ],
+            "origin": [
+              133.25,
+              127.25
+            ],
+            "anchor": [
+              470.25,
+              470.25
+            ],
+            "silhouette": [
+              338,
+              344,
+              603,
+              581
+            ]
+          },
+          {
+            "name": "claude-effects-1-2",
+            "row": 1,
+            "column": 2,
+            "rect": [
+              629,
+              311,
+              307,
+              285
+            ],
+            "origin": [
+              154.75,
+              159.25
+            ],
+            "anchor": [
+              783.75,
+              470.25
+            ],
+            "silhouette": [
+              630,
+              312,
+              935,
+              595
+            ]
+          },
+          {
+            "name": "claude-effects-1-3",
+            "row": 1,
+            "column": 3,
+            "rect": [
+              994,
+              353,
+              217,
+              229
+            ],
+            "origin": [
+              103.25,
+              117.25
+            ],
+            "anchor": [
+              1097.25,
+              470.25
+            ],
+            "silhouette": [
+              995,
+              354,
+              1210,
+              581
+            ]
+          },
+          {
+            "name": "claude-effects-2-0",
+            "row": 2,
+            "column": 0,
+            "rect": [
+              67,
+              699,
+              176,
+              189
+            ],
+            "origin": [
+              89.75,
+              84.75
+            ],
+            "anchor": [
+              156.75,
+              783.75
+            ],
+            "silhouette": [
+              68,
+              700,
+              242,
+              887
+            ]
+          },
+          {
+            "name": "claude-effects-2-1",
+            "row": 2,
+            "column": 1,
+            "rect": [
+              366,
+              699,
+              208,
+              202
+            ],
+            "origin": [
+              104.25,
+              84.75
+            ],
+            "anchor": [
+              470.25,
+              783.75
+            ],
+            "silhouette": [
+              367,
+              700,
+              573,
+              900
+            ]
+          },
+          {
+            "name": "claude-effects-2-2",
+            "row": 2,
+            "column": 2,
+            "rect": [
+              680,
+              625,
+              210,
+              278
+            ],
+            "origin": [
+              103.75,
+              158.75
+            ],
+            "anchor": [
+              783.75,
+              783.75
+            ],
+            "silhouette": [
+              681,
+              626,
+              889,
+              902
+            ]
+          },
+          {
+            "name": "claude-effects-2-3",
+            "row": 2,
+            "column": 3,
+            "rect": [
+              1002,
+              641,
+              187,
+              248
+            ],
+            "origin": [
+              95.25,
+              142.75
+            ],
+            "anchor": [
+              1097.25,
+              783.75
+            ],
+            "silhouette": [
+              1003,
+              642,
+              1188,
+              888
+            ]
+          },
+          {
+            "name": "claude-effects-3-0",
+            "row": 3,
+            "column": 0,
+            "rect": [
+              23,
+              1023,
+              266,
+              161
+            ],
+            "origin": [
+              133.75,
+              74.25
+            ],
+            "anchor": [
+              156.75,
+              1097.25
+            ],
+            "silhouette": [
+              24,
+              1024,
+              288,
+              1183
+            ]
+          },
+          {
+            "name": "claude-effects-3-1",
+            "row": 3,
+            "column": 1,
+            "rect": [
+              321,
+              971,
+              296,
+              250
+            ],
+            "origin": [
+              149.25,
+              126.25
+            ],
+            "anchor": [
+              470.25,
+              1097.25
+            ],
+            "silhouette": [
+              322,
+              972,
+              617,
+              1220
+            ]
+          },
+          {
+            "name": "claude-effects-3-2",
+            "row": 3,
+            "column": 2,
+            "rect": [
+              617,
+              959,
+              319,
+              264
+            ],
+            "origin": [
+              166.75,
+              138.25
+            ],
+            "anchor": [
+              783.75,
+              1097.25
+            ],
+            "silhouette": [
+              617,
+              960,
+              935,
+              1222
+            ]
+          },
+          {
+            "name": "claude-effects-3-3",
+            "row": 3,
+            "column": 3,
+            "rect": [
+              955,
+              967,
+              266,
+              238
+            ],
+            "origin": [
+              142.25,
+              130.25
+            ],
+            "anchor": [
+              1097.25,
+              1097.25
+            ],
+            "silhouette": [
+              956,
+              968,
+              1220,
+              1204
+            ]
+          }
+        ]
+      }
+    },
+    "chatgpt": {
+      "actions": {
+        "image": "assets/fighters/skills/chatgpt-actions.png",
+        "width": 1254,
+        "height": 1254,
+        "sha256": "f168f893e8d32ca3498bb5b48de00a7cc58e1153491c2cc66772dd7e67343229",
+        "scale": 0.5710437710437711,
+        "referenceHeight": 169.60000000000002,
+        "standingHeight": 297,
+        "cellSize": [
+          313.5,
+          313.5
+        ],
+        "horizontalGutterAlpha": [
+          1,
+          5,
+          1
+        ],
+        "bands": [
+          {
+            "y": [
+              0,
+              314
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "y": [
+              314,
+              624
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              942,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              6
+            ]
+          },
+          {
+            "y": [
+              624,
+              940
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              0,
+              1
+            ]
+          },
+          {
+            "y": [
+              940,
+              1254
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              1,
+              1
+            ]
+          }
+        ],
+        "frames": [
+          {
+            "name": "chatgpt-actions-0-0",
+            "row": 0,
+            "column": 0,
+            "rect": [
+              57,
+              8,
+              201,
+              300
+            ],
+            "origin": [
+              105,
+              298
+            ],
+            "anchor": [
+              162,
+              306
+            ],
+            "silhouette": [
+              58,
+              9,
+              257,
+              307
+            ]
+          },
+          {
+            "name": "chatgpt-actions-0-1",
+            "row": 0,
+            "column": 1,
+            "rect": [
+              372,
+              7,
+              201,
+              301
+            ],
+            "origin": [
+              107,
+              299
+            ],
+            "anchor": [
+              479,
+              306
+            ],
+            "silhouette": [
+              373,
+              8,
+              572,
+              307
+            ]
+          },
+          {
+            "name": "chatgpt-actions-0-2",
+            "row": 0,
+            "column": 2,
+            "rect": [
+              661,
+              8,
+              253,
+              300
+            ],
+            "origin": [
+              132,
+              297
+            ],
+            "anchor": [
+              793,
+              305
+            ],
+            "silhouette": [
+              662,
+              9,
+              913,
+              307
+            ]
+          },
+          {
+            "name": "chatgpt-actions-0-3",
+            "row": 0,
+            "column": 3,
+            "rect": [
+              1001,
+              7,
+              197,
+              301
+            ],
+            "origin": [
+              108,
+              299
+            ],
+            "anchor": [
+              1109,
+              306
+            ],
+            "silhouette": [
+              1002,
+              8,
+              1197,
+              307
+            ]
+          },
+          {
+            "name": "chatgpt-actions-1-0",
+            "row": 1,
+            "column": 0,
+            "rect": [
+              57,
+              323,
+              203,
+              299
+            ],
+            "origin": [
+              107,
+              296
+            ],
+            "anchor": [
+              164,
+              619
+            ],
+            "silhouette": [
+              58,
+              324,
+              259,
+              621
+            ]
+          },
+          {
+            "name": "chatgpt-actions-1-1",
+            "row": 1,
+            "column": 1,
+            "rect": [
+              341,
+              321,
+              244,
+              301
+            ],
+            "origin": [
+              139,
+              298
+            ],
+            "anchor": [
+              480,
+              619
+            ],
+            "silhouette": [
+              342,
+              322,
+              584,
+              621
+            ]
+          },
+          {
+            "name": "chatgpt-actions-1-2",
+            "row": 1,
+            "column": 2,
+            "rect": [
+              635,
+              324,
+              307,
+              298
+            ],
+            "origin": [
+              183,
+              294
+            ],
+            "anchor": [
+              818,
+              618
+            ],
+            "silhouette": [
+              636,
+              325,
+              942,
+              621
+            ]
+          },
+          {
+            "name": "chatgpt-actions-1-3",
+            "row": 1,
+            "column": 3,
+            "rect": [
+              1006,
+              326,
+              192,
+              297
+            ],
+            "origin": [
+              100,
+              294
+            ],
+            "anchor": [
+              1106,
+              620
+            ],
+            "silhouette": [
+              1007,
+              327,
+              1197,
+              622
+            ]
+          },
+          {
+            "name": "chatgpt-actions-2-0",
+            "row": 2,
+            "column": 0,
+            "rect": [
+              35,
+              647,
+              245,
+              275
+            ],
+            "origin": [
+              160,
+              273
+            ],
+            "anchor": [
+              195,
+              920
+            ],
+            "silhouette": [
+              36,
+              648,
+              279,
+              921
+            ]
+          },
+          {
+            "name": "chatgpt-actions-2-1",
+            "row": 2,
+            "column": 1,
+            "rect": [
+              336,
+              645,
+              253,
+              277
+            ],
+            "origin": [
+              171,
+              274
+            ],
+            "anchor": [
+              507,
+              919
+            ],
+            "silhouette": [
+              337,
+              646,
+              588,
+              921
+            ]
+          },
+          {
+            "name": "chatgpt-actions-2-2",
+            "row": 2,
+            "column": 2,
+            "rect": [
+              646,
+              624,
+              268,
+              299
+            ],
+            "origin": [
+              188,
+              296
+            ],
+            "anchor": [
+              834,
+              920
+            ],
+            "silhouette": [
+              647,
+              625,
+              913,
+              922
+            ]
+          },
+          {
+            "name": "chatgpt-actions-2-3",
+            "row": 2,
+            "column": 3,
+            "rect": [
+              978,
+              642,
+              242,
+              281
+            ],
+            "origin": [
+              169,
+              278
+            ],
+            "anchor": [
+              1147,
+              920
+            ],
+            "silhouette": [
+              979,
+              643,
+              1219,
+              922
+            ]
+          },
+          {
+            "name": "chatgpt-actions-3-0",
+            "row": 3,
+            "column": 0,
+            "rect": [
+              55,
+              954,
+              205,
+              294
+            ],
+            "origin": [
+              109,
+              292
+            ],
+            "anchor": [
+              164,
+              1246
+            ],
+            "silhouette": [
+              56,
+              955,
+              259,
+              1247
+            ]
+          },
+          {
+            "name": "chatgpt-actions-3-1",
+            "row": 3,
+            "column": 1,
+            "rect": [
+              321,
+              952,
+              285,
+              296
+            ],
+            "origin": [
+              155,
+              293
+            ],
+            "anchor": [
+              476,
+              1245
+            ],
+            "silhouette": [
+              322,
+              953,
+              605,
+              1247
+            ]
+          },
+          {
+            "name": "chatgpt-actions-3-2",
+            "row": 3,
+            "column": 2,
+            "rect": [
+              629,
+              957,
+              293,
+              290
+            ],
+            "origin": [
+              178,
+              288
+            ],
+            "anchor": [
+              807,
+              1245
+            ],
+            "silhouette": [
+              630,
+              958,
+              921,
+              1246
+            ]
+          },
+          {
+            "name": "chatgpt-actions-3-3",
+            "row": 3,
+            "column": 3,
+            "rect": [
+              990,
+              952,
+              217,
+              296
+            ],
+            "origin": [
+              131,
+              293
+            ],
+            "anchor": [
+              1121,
+              1245
+            ],
+            "silhouette": [
+              991,
+              953,
+              1206,
+              1247
+            ]
+          }
+        ]
+      },
+      "effects": {
+        "image": "assets/fighters/skills/chatgpt-effects.png",
+        "width": 1254,
+        "height": 1254,
+        "sha256": "a5c6d28c0c2cdd70d38baeff248bfd013547bdd629f0a66747e4f71843e55143",
+        "scale": 1,
+        "referenceHeight": 169.60000000000002,
+        "standingHeight": 147.75,
+        "cellSize": [
+          313.5,
+          313.5
+        ],
+        "horizontalGutterAlpha": [
+          2,
+          2,
+          2
+        ],
+        "bands": [
+          {
+            "y": [
+              0,
+              314
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              2,
+              3
+            ]
+          },
+          {
+            "y": [
+              314,
+              627
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              1,
+              2,
+              2
+            ]
+          },
+          {
+            "y": [
+              627,
+              940
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              2,
+              6,
+              2
+            ]
+          },
+          {
+            "y": [
+              940,
+              1254
+            ],
+            "x": [
+              0,
+              314,
+              627,
+              940,
+              1254
+            ],
+            "gutterAlpha": [
+              3,
+              5,
+              4
+            ]
+          }
+        ],
+        "frames": [
+          {
+            "name": "chatgpt-effects-0-0",
+            "row": 0,
+            "column": 0,
+            "rect": [
+              65,
+              78,
+              170,
+              175
+            ],
+            "origin": [
+              91.75,
+              78.75
+            ],
+            "anchor": [
+              156.75,
+              156.75
+            ],
+            "silhouette": [
+              66,
+              79,
+              234,
+              252
+            ]
+          },
+          {
+            "name": "chatgpt-effects-0-1",
+            "row": 0,
+            "column": 1,
+            "rect": [
+              344,
+              104,
+              248,
+              125
+            ],
+            "origin": [
+              126.25,
+              52.75
+            ],
+            "anchor": [
+              470.25,
+              156.75
+            ],
+            "silhouette": [
+              345,
+              105,
+              591,
+              228
+            ]
+          },
+          {
+            "name": "chatgpt-effects-0-2",
+            "row": 0,
+            "column": 2,
+            "rect": [
+              656,
+              33,
+              280,
+              255
+            ],
+            "origin": [
+              127.75,
+              123.75
+            ],
+            "anchor": [
+              783.75,
+              156.75
+            ],
+            "silhouette": [
+              657,
+              34,
+              935,
+              287
+            ]
+          },
+          {
+            "name": "chatgpt-effects-0-3",
+            "row": 0,
+            "column": 3,
+            "rect": [
+              974,
+              53,
+              226,
+              215
+            ],
+            "origin": [
+              123.25,
+              103.75
+            ],
+            "anchor": [
+              1097.25,
+              156.75
+            ],
+            "silhouette": [
+              975,
+              54,
+              1199,
+              267
+            ]
+          },
+          {
+            "name": "chatgpt-effects-1-0",
+            "row": 1,
+            "column": 0,
+            "rect": [
+              89,
+              453,
+              146,
+              126
+            ],
+            "origin": [
+              67.75,
+              17.25
+            ],
+            "anchor": [
+              156.75,
+              470.25
+            ],
+            "silhouette": [
+              90,
+              454,
+              234,
+              578
+            ]
+          },
+          {
+            "name": "chatgpt-effects-1-1",
+            "row": 1,
+            "column": 1,
+            "rect": [
+              364,
+              366,
+              220,
+              215
+            ],
+            "origin": [
+              106.25,
+              104.25
+            ],
+            "anchor": [
+              470.25,
+              470.25
+            ],
+            "silhouette": [
+              365,
+              367,
+              583,
+              580
+            ]
+          },
+          {
+            "name": "chatgpt-effects-1-2",
+            "row": 1,
+            "column": 2,
+            "rect": [
+              653,
+              350,
+              278,
+              248
+            ],
+            "origin": [
+              130.75,
+              120.25
+            ],
+            "anchor": [
+              783.75,
+              470.25
+            ],
+            "silhouette": [
+              654,
+              351,
+              930,
+              597
+            ]
+          },
+          {
+            "name": "chatgpt-effects-1-3",
+            "row": 1,
+            "column": 3,
+            "rect": [
+              1015,
+              373,
+              181,
+              191
+            ],
+            "origin": [
+              82.25,
+              97.25
+            ],
+            "anchor": [
+              1097.25,
+              470.25
+            ],
+            "silhouette": [
+              1016,
+              374,
+              1195,
+              563
+            ]
+          },
+          {
+            "name": "chatgpt-effects-2-0",
+            "row": 2,
+            "column": 0,
+            "rect": [
+              40,
+              809,
+              234,
+              105
+            ],
+            "origin": [
+              116.75,
+              -25.25
+            ],
+            "anchor": [
+              156.75,
+              783.75
+            ],
+            "silhouette": [
+              41,
+              810,
+              273,
+              913
+            ]
+          },
+          {
+            "name": "chatgpt-effects-2-1",
+            "row": 2,
+            "column": 1,
+            "rect": [
+              332,
+              739,
+              270,
+              164
+            ],
+            "origin": [
+              138.25,
+              44.75
+            ],
+            "anchor": [
+              470.25,
+              783.75
+            ],
+            "silhouette": [
+              333,
+              740,
+              601,
+              902
+            ]
+          },
+          {
+            "name": "chatgpt-effects-2-2",
+            "row": 2,
+            "column": 2,
+            "rect": [
+              628,
+              648,
+              299,
+              259
+            ],
+            "origin": [
+              155.75,
+              135.75
+            ],
+            "anchor": [
+              783.75,
+              783.75
+            ],
+            "silhouette": [
+              629,
+              649,
+              926,
+              906
+            ]
+          },
+          {
+            "name": "chatgpt-effects-2-3",
+            "row": 2,
+            "column": 3,
+            "rect": [
+              981,
+              697,
+              232,
+              190
+            ],
+            "origin": [
+              116.25,
+              86.75
+            ],
+            "anchor": [
+              1097.25,
+              783.75
+            ],
+            "silhouette": [
+              982,
+              698,
+              1212,
+              886
+            ]
+          },
+          {
+            "name": "chatgpt-effects-3-0",
+            "row": 3,
+            "column": 0,
+            "rect": [
+              33,
+              1014,
+              252,
+              196
+            ],
+            "origin": [
+              123.75,
+              83.25
+            ],
+            "anchor": [
+              156.75,
+              1097.25
+            ],
+            "silhouette": [
+              34,
+              1015,
+              284,
+              1209
+            ]
+          },
+          {
+            "name": "chatgpt-effects-3-1",
+            "row": 3,
+            "column": 1,
+            "rect": [
+              316,
+              1015,
+              309,
+              195
+            ],
+            "origin": [
+              154.25,
+              82.25
+            ],
+            "anchor": [
+              470.25,
+              1097.25
+            ],
+            "silhouette": [
+              317,
+              1016,
+              624,
+              1209
+            ]
+          },
+          {
+            "name": "chatgpt-effects-3-2",
+            "row": 3,
+            "column": 2,
+            "rect": [
+              628,
+              977,
+              309,
+              235
+            ],
+            "origin": [
+              155.75,
+              120.25
+            ],
+            "anchor": [
+              783.75,
+              1097.25
+            ],
+            "silhouette": [
+              629,
+              978,
+              936,
+              1211
+            ]
+          },
+          {
+            "name": "chatgpt-effects-3-3",
+            "row": 3,
+            "column": 3,
+            "rect": [
+              967,
+              998,
+              254,
+              207
+            ],
+            "origin": [
+              130.25,
+              99.25
+            ],
+            "anchor": [
+              1097.25,
+              1097.25
+            ],
+            "silhouette": [
+              968,
+              999,
+              1220,
+              1204
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -19,7 +19,7 @@ test('startup neutral inputs are explicit, missing input cannot advance', () => 
 test('stalled capture is immutable, including zero and key release', () => {
   const queue = new Lockstep(0);
   assert.deepEqual(queue.capture(16), { frame: 2, mask: 16 });
-  for (let i = 0; i < 100; i++) assert.equal(queue.capture(i & 1023), null);
+  for (let i = 0; i < 100; i++) assert.equal(queue.capture(i & 4095), null);
   queue.advance(() => {});
   assert.deepEqual(queue.capture(0), { frame: 3, mask: 0 });
   assert.equal(queue.capture(2), null);
@@ -38,9 +38,9 @@ test('guest capture controls only P2, remote input controls P1', () => {
 test('invalid ranges and conflicting duplicates fail at the input boundary', () => {
   const queue = new Lockstep(0);
   for (const frame of [-1, 1.5, NaN, Infinity, 65]) assert.throws(() => queue.receive(frame, 0));
-  for (const mask of [-1, 2048, NaN, 1.5, '2']) assert.throws(() => queue.receive(2, mask));
+  for (const mask of [-1, 4096, NaN, 1.5, '2']) assert.throws(() => queue.receive(2, mask));
   assert.equal(queue.receive(3, 128), true);
-  assert.equal(queue.receive(4, 2047), true);
+  assert.equal(queue.receive(4, 4095), true);
   assert.equal(queue.receive(2, 8), true);
   assert.equal(queue.receive(2, 8), false);
   assert.throws(() => queue.receive(2, 0), /冲突/);
@@ -51,7 +51,7 @@ test('asymmetric scheduling and delayed delivery keep 10000 frame inputs identic
   const records = [[], []], mail = [[], []];
   const capture = player => {
     const queue = queues[player];
-    const packet = queue.capture((queue.frame * (player ? 13 : 7)) & 1023);
+    const packet = queue.capture((queue.frame * (player ? 13 : 7)) & 4095);
     if (packet) mail[1 - player].push({ ...packet, at: tick + 1 + (packet.frame % 9) });
   };
   let tick = 0;

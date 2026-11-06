@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { test } from 'node:test';
+import * as Skills from '../shared/skills.js';
 import { BTN, normalizeMask } from '../shared/input.js';
 import { loadSprites, sampleSprite } from '../shared/sprites.js';
 
@@ -88,7 +89,7 @@ test('grounded KO visibly falls before holding down; airborne KO waits for landi
 function actualFighters() {
   const html = read('index.html').toString();
   const source = html.slice(html.indexOf('let BUFFER_LEN ='), html.indexOf('/* ====================== PHASE 8'));
-  const context = vm.createContext({ BTN,normalizeMask,BIT_OF:{punch:16,kick:32,up:4,block:64,fireball:128,uppercut:256,spinKick:512},FLOOR:452,MOVES:moves,SCALING:config.scaling,
+  const context = vm.createContext({ Skills,BTN,normalizeMask,BIT_OF:{punch:16,kick:32,up:4,block:64,fireball:128,uppercut:256,spinKick:512},FLOOR:452,MOVES:moves,SCALING:config.scaling,
     scaleAt:(table,index)=>table[Math.min(index,table.length-1)],
     clamp:(value,min,max)=>Math.max(min,Math.min(value,max)),
     Audio5:{ play(){} },FX:{ spark(){},cancelFlash(){} },Juice:{ impact(){} },Rng:{ range:()=>0 },

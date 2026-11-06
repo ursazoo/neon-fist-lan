@@ -1,58 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
 import { test } from 'node:test';
 import { BTN, MAX_INPUT_MASK, normalizeMask, InputState } from '../shared/input.js';
 import { Lockstep, INPUT_DELAY } from '../shared/lockstep.js';
-import { configFingerprint } from '../shared/integrity.js';
+import { engine } from './fixtures/engine.mjs';
 import { validateFighter, validateRules } from '../shared/configLoader.js';
 
 const read = file => readFileSync(new URL('../'+file,import.meta.url),'utf8');
-const html = read('index.html');
 const config = JSON.parse(read('data/fighter.neon.json'));
 const rules = JSON.parse(read('data/rules.json'));
 const stage = JSON.parse(read('data/stage.synthwave.json'));
-const between = (start,end) => html.slice(html.indexOf(start),html.indexOf(end));
-
-function engine() {
-  const context = vm.createContext({
-    BTN,normalizeMask,configFingerprint,Math,
-    PHYS:config.physics,MOVES:structuredClone(config.moves),MOTIONS:config.motions,
-    SCALING:config.scaling,HURT:config.hurtboxes,
-    FLOOR:stage.world.floorY,WALL_L:stage.world.wallLeft,WALL_R:stage.world.wallRight,
-    VW:stage.world.width,
-    Rng:{s:1,range:()=>0},Audio5:{play(){}},
-    FX:{dust(){},spark(){},cancelFlash(){},wallSpark(){}},Cam:{shake(){},flash(){}},
-    Game:{frame:0,hitstop:0,phase:'fight',timer:99,timerSub:0,phaseT:0},
-    updateFlow(){},Net:{epoch:1},
-  });
-  vm.runInContext([
-    between('const BIT_OF =','const KEYMAP ='),
-    html.match(/^const scaleAt = .*$/m)[0],
-    between('function aabb(','const Rng ='),
-    between('const ANIM =','const PAL ='),
-    between('let BUFFER_LEN =','/* ====================== PHASE 8'),
-    between('const Juice =','const DEBUG ='),
-    `BUFFER_LEN=${rules.inputBufferFrames};
-     for(const [key,move] of Object.entries(MOVES)){ move.key=key; move.frameMap=FRAME_MAPS[key]; }
-     const P1=new Fighter(0,330,{},'P1'), P2=new Fighter(1,820,{},'P2');
-     const FIGHTERS=[P1,P2];
-     P1.setState('idle'); P2.setState('idle');
-     globalThis.api={P1,P2,MOVES,Projectiles,InputBuffer};`,
-    between('function resolveCombat(','function snapshot('),
-    'Object.assign(api,{simulate,resolveCombat,hash:deterministicHash});',
-  ].join('\n'),context);
-  const api=context.api;
-  api.starts=[];
-  const original=api.P1.startMove;
-  api.P1.startMove=function(...args){ api.starts.push(args); return original.apply(this,args); };
-  api.context=context;
-  api.update=(mask=0) => api.P1.update(mask,api.P2);
-  api.frames=(count,mask=0) => {for(let i=0;i<count;i++) api.update(mask);};
-  api.sim=(a=0,b=0) => api.simulate(a,b);
-  api.game=context.Game;
-  return api;
-}
 
 test('input config validates with distinct fists and unchanged 10 frame buffer',()=>{
   validateFighter(config); validateRules(rules);
@@ -90,7 +47,7 @@ test('SOCD is neutral for both axes at capture and at the engine boundary',()=>{
   }
   const input=new InputState(); input.set('a',BTN.LEFT|BTN.UP); input.set('b',BTN.RIGHT|BTN.DOWN);
   assert.equal(input.take(),0); input.remove('b'); assert.equal(input.take(),BTN.LEFT|BTN.UP);
-  assert.equal(normalizeMask(MAX_INPUT_MASK),2032);
+  assert.equal(normalizeMask(MAX_INPUT_MASK),4080);
 });
 
 test('released opposite directions cannot suppress the newer direction or resurrect a conflict',()=>{
